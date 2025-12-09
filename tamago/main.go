@@ -12,16 +12,19 @@ import (
 func main() {
 	// Criar o Tamagotchi
 	tama := &model.Tama{
-		Name:      "Pochi",
-		Hunger:    50,
-		Thirst:    50,
-		Sleepy:    50,
-		Happiness: 50,
-		Angry:     0,
-		Sleeping:  false,
-		Dead:      false,
-		Depressed: false,
-		PissedOf:  false,
+		Name:       "Pochi",
+		Hunger:     50,
+		Thirst:     50,
+		Sleepy:     50,
+		Happiness:  50,
+		Angry:      0,
+		Weight:     50,
+		Sleeping:   false,
+		Dead:       false,
+		Depressed:  false,
+		PissedOf:   false,
+		Overweight: false,
+		Underweight: false,
 	}
 
 	// Iniciar o ciclo de vida
