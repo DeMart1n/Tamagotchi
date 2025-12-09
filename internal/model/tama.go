@@ -15,17 +15,28 @@ const (
 
 	MaxAngry = 100
 	MinAngry = 0
+
+	MaxWeight = 100
+	MinWeight = 0
+
+	Underweight     = 20
+	NormalWeightMin = 30
+	NormalWeightMax = 70
+	Overweight      = 80
 )
 
 type Tama struct {
-	Name      string
-	Hunger    int
-	Thirst    int
-	Sleepy    int
-	Happiness int
-	Angry     int
-	Sleeping  bool
-	Dead      bool
-	Depressed bool
-	PissedOf  bool
+	Name        string
+	Hunger      int
+	Thirst      int
+	Sleepy      int
+	Happiness   int
+	Angry       int
+	Weight      int
+	Sleeping    bool
+	Dead        bool
+	Depressed   bool
+	PissedOf    bool
+	Overweight  bool
+	Underweight bool
 }

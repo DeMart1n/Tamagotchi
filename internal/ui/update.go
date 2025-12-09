@@ -13,6 +13,9 @@ func ToFeed(tama *model.Tama) {
 	}
 
 	tama.Hunger = min(tama.Hunger+15, model.MaxHunger)
+	// Alimentar aumenta o peso
+	tama.Weight = min(tama.Weight+2, model.MaxWeight)
+	updateWeightStates(tama)
 }
 
 func GiveWater(tama *model.Tama) {
@@ -53,6 +56,21 @@ func Sleep(tama *model.Tama) {
 		tama.Sleeping = false
 		tama.Sleepy = min(tama.Sleepy+50, model.MaxSleepy)
 	}()
+}
+
+func Exercise(tama *model.Tama) {
+	if tama.Weight == model.MinWeight {
+		fmt.Println("I'm already at my ideal weight!")
+		return
+	}
+	// Exercitar diminui o peso
+	tama.Weight = max(tama.Weight-5, model.MinWeight)
+	updateWeightStates(tama)
+}
+
+func updateWeightStates(tama *model.Tama) {
+	tama.Overweight = tama.Weight >= model.Overweight
+	tama.Underweight = tama.Weight <= model.Underweight
 }
 
 func Tick(tama *model.Tama) {

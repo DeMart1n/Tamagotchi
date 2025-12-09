@@ -44,14 +44,14 @@ var (
 			BorderForeground(highlight).
 			Align(lipgloss.Center).
 			Width(30).
-			Height(11) // Altura fixa para alinhar com status
-
+			Height(13) // Altura fixa para alinhar com status (updated to match stats box)
+		// Aumentei a altura pra barra de peso
 	styleStatsBox = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("#666")).
 			Padding(0, 2).
 			Width(44).
-			Height(11)
+			Height(13) // Aumentei a altura pra barra de peso
 
 	styleInput = lipgloss.NewStyle().
 			Border(lipgloss.NormalBorder(), false, false, true, false).
@@ -91,7 +91,7 @@ type Model struct {
 
 func InitialModel(tama *model.Tama, quit chan bool) Model {
 	ti := textinput.New()
-	ti.Placeholder = "Comandos: feed, water, pet, sleep, annoy..."
+	ti.Placeholder = "Comandos: feed, water, pet, sleep, exercise, annoy..."
 	ti.Focus()
 	ti.CharLimit = 156
 	ti.Width = 50
@@ -171,6 +171,9 @@ func (m *Model) handleCommand(cmd string) {
 	case "sleep", "s":
 		Sleep(m.tama)
 		m.message = "😴 Shhh... " + m.tama.Name + " foi dormir."
+	case "exercise", "e", "play":
+		Exercise(m.tama)
+		m.message = "🏃 " + m.tama.Name + " fez exercício e está mais saudável!"
 	case "annoy", "a":
 		Annoy(m.tama)
 		m.message = "😠 Hey! Você irritou o " + m.tama.Name + "!"
@@ -217,7 +220,7 @@ func (m Model) View() string {
 	inputView := styleInput.Render(m.textInput.View())
 
 	// 5. Ajuda/Rodapé
-	helpView := styleHelp.Render("ESC/Ctrl+C: Sair • Comandos: (f)eed, (w)ater, (p)et, (s)leep")
+	helpView := styleHelp.Render("ESC/Ctrl+C: Sair • Comandos: (f)eed, (w)ater, (p)et, (s)leep, (e)xercise")
 
 	// Montagem final do bloco da aplicação
 	appView := lipgloss.JoinVertical(
@@ -290,6 +293,14 @@ func (m Model) renderAvatar() string {
 		art = "💢 👿"
 		mood = "Furioso!"
 		color = danger
+	case m.tama.Overweight:
+		art = "🐷"
+		mood = "Sobrepeso"
+		color = warning
+	case m.tama.Underweight:
+		art = "🦴"
+		mood = "Abaixo do peso"
+		color = warning
 	case m.tama.Angry > 50:
 		art = "😠"
 		mood = "Irritado"
@@ -339,6 +350,17 @@ func (m Model) renderStats() string {
 	barSleep := m.progressBar("Energia", m.tama.Sleepy, model.MaxSleepy)
 	barHappy := m.progressBar("Felicidade", m.tama.Happiness, model.MaxHappiness)
 	barAnger := m.progressBar("Calma", model.MaxAngry-m.tama.Angry, model.MaxAngry) // Invertido para lógica visual (barra cheia = bom)
+	barWeight := m.progressBar("Peso", m.tama.Weight, model.MaxWeight)
+
+	// Indicador de peso
+	weightStatus := ""
+	if m.tama.Overweight {
+		weightStatus = lipgloss.NewStyle().Foreground(warning).Render(" ⚠️ Sobrepeso")
+	} else if m.tama.Underweight {
+		weightStatus = lipgloss.NewStyle().Foreground(warning).Render(" ⚠️ Abaixo do peso")
+	} else {
+		weightStatus = lipgloss.NewStyle().Foreground(special).Render(" ✓ Peso ideal")
+	}
 
 	return styleStatsBox.Render(
 		lipgloss.JoinVertical(lipgloss.Left,
@@ -349,6 +371,7 @@ func (m Model) renderStats() string {
 			barSleep,
 			barHappy,
 			barAnger,
+			barWeight+weightStatus,
 		),
 	)
 }
