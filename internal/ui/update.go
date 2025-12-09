@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func toFeed(tama *model.Tama) {
+func ToFeed(tama *model.Tama) {
 	if tama.Hunger == model.MaxHunger {
 		fmt.Println("I'm Full!")
 		return
@@ -15,7 +15,7 @@ func toFeed(tama *model.Tama) {
 	tama.Hunger = min(tama.Hunger+15, model.MaxHunger)
 }
 
-func giveWater(tama *model.Tama) {
+func GiveWater(tama *model.Tama) {
 	if tama.Thirst == model.MaxThirst {
 		fmt.Println("I've had enough!")
 		return
@@ -24,7 +24,7 @@ func giveWater(tama *model.Tama) {
 	tama.Thirst = min(tama.Thirst+15, model.MaxThirst)
 }
 
-func petTama(tama *model.Tama) {
+func PetTama(tama *model.Tama) {
 	if tama.Happiness == model.MaxHappiness {
 		fmt.Println("I'm all cuddled out!")
 		return
