@@ -71,6 +71,12 @@ func Exercise(tama *model.Tama) {
 func updateWeightStates(tama *model.Tama) {
 	tama.Overweight = tama.Weight >= model.Overweight
 	tama.Underweight = tama.Weight <= model.Underweight
+
+	// Morte por peso zero
+	if tama.Weight <= 0 {
+		tama.Dead = true
+		fmt.Printf("%s morreu por falta de peso! 💀\n", tama.Name)
+	}
 }
 
 func Tick(tama *model.Tama) {
@@ -85,6 +91,13 @@ func Tick(tama *model.Tama) {
 	}
 	if tama.Happiness > 0 {
 		tama.Happiness--
+	}
+
+	// Verifica morte por peso zero
+	if tama.Weight <= 0 {
+		tama.Dead = true
+		fmt.Printf("%s morreu por falta de peso! 💀\n", tama.Name)
+		return
 	}
 
 	//Mortes por fome e sede
