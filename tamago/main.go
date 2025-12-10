@@ -12,7 +12,7 @@ import (
 func main() {
 	// Criar o Tamagotchi
 	tama := &model.Tama{
-		Name:       "Pochi",
+		Name:       "TamaGo",
 		Hunger:     50,
 		Thirst:     50,
 		Sleepy:     50,
