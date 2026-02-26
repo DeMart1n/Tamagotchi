@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 const (
 	MaxHunger = 100
 	MinHunger = 0
@@ -26,17 +28,48 @@ const (
 )
 
 type Tama struct {
-	Name        string
-	Hunger      int
-	Thirst      int
-	Sleepy      int
-	Happiness   int
-	Angry       int
-	Weight      int
-	Sleeping    bool
-	Dead        bool
-	Depressed   bool
-	PissedOf    bool
-	Overweight  bool
-	Underweight bool
+	Name        string    `json:"name"`
+	Hunger      int       `json:"hunger"`
+	Thirst      int       `json:"thirst"`
+	Sleepy      int       `json:"sleepy"`
+	Happiness   int       `json:"happiness"`
+	Angry       int       `json:"angry"`
+	Weight      int       `json:"weight"`
+	Sleeping    bool      `json:"sleeping"`
+	Dead        bool      `json:"dead"`
+	Depressed   bool      `json:"depressed"`
+	PissedOf    bool      `json:"pissed_of"`
+	Overweight  bool      `json:"overweight"`
+	Underweight bool      `json:"underweight"`
+	LastSaved   time.Time `json:"last_saved"`
+
+	// XP e Evolução
+	XP    int   `json:"xp"`
+	Level int   `json:"level"`
+	Stage Stage `json:"stage"`
+
+	// Contadores de ação (para conquistas)
+	TotalFeeds     int `json:"total_feeds"`
+	TotalWaters    int `json:"total_waters"`
+	TotalPets      int `json:"total_pets"`
+	TotalSleeps    int `json:"total_sleeps"`
+	TotalExercises int `json:"total_exercises"`
+	TotalAnnoys    int `json:"total_annoys"`
+	TotalTicks     int `json:"total_ticks"`
+
+	// Conquistas
+	Achievements []Achievement `json:"achievements"`
+}
+
+// AddXP adiciona XP e faz level up se necessário. Retorna true se houve level up.
+func (t *Tama) AddXP(amount int) bool {
+	t.XP += amount
+	leveled := false
+	for t.XP >= XPForNextLevel(t.Level) {
+		t.XP -= XPForNextLevel(t.Level)
+		t.Level++
+		leveled = true
+	}
+	t.Stage = StageForLevel(t.Level)
+	return leveled
 }

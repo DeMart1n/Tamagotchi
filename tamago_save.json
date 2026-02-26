@@ -1,0 +1,140 @@
+{
+  "name": "Pochi",
+  "hunger": 9,
+  "thirst": 9,
+  "sleepy": 9,
+  "happiness": 17,
+  "angry": 0,
+  "weight": 50,
+  "sleeping": false,
+  "dead": false,
+  "depressed": false,
+  "pissed_of": false,
+  "overweight": false,
+  "underweight": false,
+  "last_saved": "2026-02-24T10:15:00.129944-03:00",
+  "xp": 0,
+  "level": 1,
+  "stage": 0,
+  "total_feeds": 0,
+  "total_waters": 0,
+  "total_pets": 0,
+  "total_sleeps": 0,
+  "total_exercises": 0,
+  "total_annoys": 0,
+  "total_ticks": 41,
+  "achievements": [
+    {
+      "id": "first_feed",
+      "name": "Primeira Refeição",
+      "description": "Alimentou o Tama pela primeira vez",
+      "icon": "🍽️",
+      "unlocked": false
+    },
+    {
+      "id": "first_pet",
+      "name": "Primeiro Carinho",
+      "description": "Fez carinho no Tama pela primeira vez",
+      "icon": "💕",
+      "unlocked": false
+    },
+    {
+      "id": "first_exercise",
+      "name": "Primeiro Exercício",
+      "description": "Exercitou o Tama pela primeira vez",
+      "icon": "💪",
+      "unlocked": false
+    },
+    {
+      "id": "night_owl",
+      "name": "Coruja Noturna",
+      "description": "Sobreviveu 50 ticks",
+      "icon": "🦉",
+      "unlocked": false
+    },
+    {
+      "id": "centurion",
+      "name": "Centurião",
+      "description": "Sobreviveu 100 ticks",
+      "icon": "🏛️",
+      "unlocked": false
+    },
+    {
+      "id": "zen_master",
+      "name": "Mestre Zen",
+      "description": "Todos os stats acima de 70",
+      "icon": "🧘",
+      "unlocked": false
+    },
+    {
+      "id": "marathon",
+      "name": "Maratonista",
+      "description": "Exercitou 20 vezes",
+      "icon": "🏃",
+      "unlocked": false
+    },
+    {
+      "id": "glutton",
+      "name": "Glutão",
+      "description": "Alimentou 30 vezes",
+      "icon": "🍔",
+      "unlocked": false
+    },
+    {
+      "id": "hydrated",
+      "name": "Hidratado",
+      "description": "Deu água 30 vezes",
+      "icon": "💧",
+      "unlocked": false
+    },
+    {
+      "id": "cuddler",
+      "name": "Carinhoso",
+      "description": "Fez carinho 25 vezes",
+      "icon": "🤗",
+      "unlocked": false
+    },
+    {
+      "id": "troublemaker",
+      "name": "Encrenqueiro",
+      "description": "Irritou o Tama 15 vezes",
+      "icon": "😈",
+      "unlocked": false
+    },
+    {
+      "id": "evolved_child",
+      "name": "Crescendo!",
+      "description": "Evoluiu para Criança",
+      "icon": "🌱",
+      "unlocked": false
+    },
+    {
+      "id": "evolved_teen",
+      "name": "Adolescente",
+      "description": "Evoluiu para Adolescente",
+      "icon": "🌿",
+      "unlocked": false
+    },
+    {
+      "id": "evolved_adult",
+      "name": "Adulto",
+      "description": "Evoluiu para Adulto",
+      "icon": "🌳",
+      "unlocked": false
+    },
+    {
+      "id": "evolved_elder",
+      "name": "Ancião Sábio",
+      "description": "Evoluiu para Ancião",
+      "icon": "🌟",
+      "unlocked": false
+    },
+    {
+      "id": "level_10",
+      "name": "Nível 10",
+      "description": "Atingiu nível 10",
+      "icon": "⭐",
+      "unlocked": false
+    }
+  ]
+}
