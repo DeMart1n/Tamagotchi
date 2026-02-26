@@ -93,9 +93,23 @@ func main() {
 		}
 	}
 
-	// Garantir que saves antigos tenham achievements
+	// Garantir que saves antigos tenham achievements (inclusive novos)
 	if len(tama.Achievements) == 0 {
 		tama.Achievements = model.DefaultAchievements()
+	} else {
+		// Adicionar conquistas novas que não existem no save antigo
+		defaults := model.DefaultAchievements()
+		if len(tama.Achievements) < len(defaults) {
+			existing := make(map[string]bool)
+			for _, a := range tama.Achievements {
+				existing[a.ID] = true
+			}
+			for _, a := range defaults {
+				if !existing[a.ID] {
+					tama.Achievements = append(tama.Achievements, a)
+				}
+			}
+		}
 	}
 
 	p := tea.NewProgram(ui.InitialModel(tama), tea.WithAltScreen())

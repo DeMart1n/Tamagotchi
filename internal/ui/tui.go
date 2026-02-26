@@ -1,9 +1,12 @@
 package ui
 
 import (
+	"Pessoal/internal/dungeon"
 	"Pessoal/internal/model"
 	"Pessoal/internal/persistence"
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -79,6 +82,10 @@ type Model struct {
 	gameMode  GameMode
 	guessGame *GuessGame
 	reactGame *ReactGame
+
+	// Dungeon
+	dungeonGame *dungeon.DungeonRun
+	dungeonInv  *dungeon.Inventory
 }
 
 func InitialModel(tama *model.Tama) Model {
@@ -88,11 +95,18 @@ func InitialModel(tama *model.Tama) Model {
 	ti.CharLimit = 156
 	ti.Width = 50
 
+	// Carregar inventário da dungeon do save
+	inv := dungeon.NewInventory()
+	if len(tama.Inventory) > 0 {
+		_ = json.Unmarshal(tama.Inventory, inv)
+	}
+
 	return Model{
-		tama:      tama,
-		textInput: ti,
-		message:   "✨ Olá! Cuide bem do " + tama.Name + "!",
-		frame:     0,
+		tama:       tama,
+		textInput:  ti,
+		message:    "✨ Olá! Cuide bem do " + tama.Name + "!",
+		frame:      0,
+		dungeonInv: inv,
 	}
 }
 
@@ -157,6 +171,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case autoSaveTickMsg:
+		m.saveDungeonInventory()
 		persistence.Save(m.tama)
 		return m, autoSaveTickCmd()
 
@@ -170,6 +185,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
+			if m.gameMode == ModeDungeon {
+				m.saveDungeonInventory()
+				m.gameMode = ModeNormal
+				m.dungeonGame = nil
+				m.message = "🎮 Saiu da masmorra."
+				return m, nil
+			}
 			if m.gameMode != ModeNormal {
 				m.gameMode = ModeNormal
 				m.guessGame = nil
@@ -177,6 +199,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.message = "🎮 Saiu do mini-game."
 				return m, nil
 			}
+			m.saveDungeonInventory()
 			persistence.Save(m.tama)
 			return m, tea.Quit
 
@@ -236,12 +259,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
+			// --- Dungeon ---
+			if m.gameMode == ModeDungeon && m.dungeonGame != nil {
+				done := m.dungeonGame.HandleInput(input)
+				if done {
+					m.saveDungeonInventory()
+					m.gameMode = ModeNormal
+					m.dungeonGame = nil
+					m.message = "🎮 Voltou da masmorra."
+					if newAch := model.CheckAchievements(m.tama); len(newAch) > 0 {
+						m.message += " 🏆 " + strings.Join(newAch, ", ")
+					}
+				}
+				return m, nil
+			}
+
 			// --- Modo normal ---
 			if input == "" {
 				return m, nil
 			}
 
 			if input == "quit" || input == "exit" || input == "q" {
+				m.saveDungeonInventory()
 				persistence.Save(m.tama)
 				return m, tea.Quit
 			}
@@ -313,11 +352,43 @@ func (m *Model) handleCommand(cmd string) tea.Cmd {
 		return m.reactGame.StartCmd()
 	case "play":
 		m.message = "🎮 Mini-games: 'play guess' (adivinhação) ou 'play react' (reação)"
+	case "dungeon", "d":
+		if m.tama.Level < 3 {
+			m.message = "🗡️ Voce precisa ser pelo menos Level 3 para entrar na masmorra!"
+			return nil
+		}
+		m.gameMode = ModeDungeon
+		m.dungeonGame = dungeon.NewDungeonRun(m.tama, m.dungeonInv)
+		m.message = "🗡️ Entrando na Masmorra..."
 	default:
+		// Comando secreto: setlvl <numero>
+		if strings.HasPrefix(cmd, "setlvl ") {
+			lvlStr := strings.TrimPrefix(cmd, "setlvl ")
+			lvl, err := strconv.Atoi(lvlStr)
+			if err != nil || lvl < 0 {
+				m.message = "Uso: setlvl <numero>"
+				m.isError = true
+				return nil
+			}
+			m.tama.Level = lvl
+			m.tama.XP = 0
+			m.tama.Stage = model.StageForLevel(lvl)
+			m.message = fmt.Sprintf("Level setado para %d (%s)", lvl, m.tama.Stage.String())
+			return nil
+		}
 		m.message = fmt.Sprintf("❓ Comando '%s' desconhecido.", cmd)
 		m.isError = true
 	}
 	return nil
+}
+
+func (m *Model) saveDungeonInventory() {
+	if m.dungeonInv != nil {
+		data, err := json.Marshal(m.dungeonInv)
+		if err == nil {
+			m.tama.Inventory = data
+		}
+	}
 }
 
 func (m *Model) renderAchievementsList() string {
@@ -357,7 +428,9 @@ func (m Model) View() string {
 
 	// 2. Área Principal
 	var mainContent string
-	if m.gameMode == ModeGuess && m.guessGame != nil {
+	if m.gameMode == ModeDungeon && m.dungeonGame != nil {
+		mainContent = m.renderDungeon(l)
+	} else if m.gameMode == ModeGuess && m.guessGame != nil {
 		gameView := lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(highlight).
@@ -407,8 +480,10 @@ func (m Model) View() string {
 		helpText = "ESC: Sair do jogo • Digite um número de 1-100"
 	case ModeReact:
 		helpText = "ESC: Sair do jogo • Aperte Enter quando aparecer GO!"
+	case ModeDungeon:
+		helpText = "ESC: Sair da masmorra • Digite o número da opção"
 	default:
-		helpText = "ESC: Sair • (f)eed (w)ater (p)et (s)leep (e)xercise (a)nnoy • play • ach"
+		helpText = "ESC: Sair • (f)eed (w)ater (p)et (s)leep (e)xercise (a)nnoy • play • dungeon • ach"
 	}
 	helpView := styleHelp.Render(helpText)
 

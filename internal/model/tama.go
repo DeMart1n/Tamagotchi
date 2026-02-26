@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 const (
 	MaxHunger = 100
@@ -59,6 +62,11 @@ type Tama struct {
 
 	// Conquistas
 	Achievements []Achievement `json:"achievements"`
+
+	// Dungeon RPG
+	Inventory           json.RawMessage `json:"inventory,omitempty"`
+	TotalDungeonRuns    int             `json:"total_dungeon_runs"`
+	TotalBossesDefeated int             `json:"total_bosses_defeated"`
 }
 
 // AddXP adiciona XP e faz level up se necessário. Retorna true se houve level up.

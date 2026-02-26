@@ -1,35 +1,35 @@
 {
   "name": "Pochi",
-  "hunger": 68,
-  "thirst": 38,
-  "sleepy": 73,
-  "happiness": 43,
+  "hunger": 40,
+  "thirst": 40,
+  "sleepy": 40,
+  "happiness": 40,
   "angry": 0,
-  "weight": 35,
+  "weight": 50,
   "sleeping": false,
   "dead": false,
   "depressed": false,
   "pissed_of": false,
   "overweight": false,
   "underweight": false,
-  "last_saved": "2026-02-26T11:13:05.446961-03:00",
-  "xp": 9,
-  "level": 1,
-  "stage": 0,
-  "total_feeds": 5,
-  "total_waters": 2,
+  "last_saved": "2026-02-26T12:41:57.571006-03:00",
+  "xp": 10,
+  "level": 50,
+  "stage": 4,
+  "total_feeds": 0,
+  "total_waters": 0,
   "total_pets": 0,
-  "total_sleeps": 1,
-  "total_exercises": 5,
+  "total_sleeps": 0,
+  "total_exercises": 0,
   "total_annoys": 0,
-  "total_ticks": 8,
+  "total_ticks": 5,
   "achievements": [
     {
       "id": "first_feed",
       "name": "Primeira Refeição",
       "description": "Alimentou o Tama pela primeira vez",
       "icon": "🍽️",
-      "unlocked": true
+      "unlocked": false
     },
     {
       "id": "first_pet",
@@ -43,7 +43,7 @@
       "name": "Primeiro Exercício",
       "description": "Exercitou o Tama pela primeira vez",
       "icon": "💪",
-      "unlocked": true
+      "unlocked": false
     },
     {
       "id": "night_owl",
@@ -106,35 +106,83 @@
       "name": "Crescendo!",
       "description": "Evoluiu para Criança",
       "icon": "🌱",
-      "unlocked": false
+      "unlocked": true
     },
     {
       "id": "evolved_teen",
       "name": "Adolescente",
       "description": "Evoluiu para Adolescente",
       "icon": "🌿",
-      "unlocked": false
+      "unlocked": true
     },
     {
       "id": "evolved_adult",
       "name": "Adulto",
       "description": "Evoluiu para Adulto",
       "icon": "🌳",
-      "unlocked": false
+      "unlocked": true
     },
     {
       "id": "evolved_elder",
       "name": "Ancião Sábio",
       "description": "Evoluiu para Ancião",
       "icon": "🌟",
-      "unlocked": false
+      "unlocked": true
     },
     {
       "id": "level_10",
       "name": "Nível 10",
       "description": "Atingiu nível 10",
       "icon": "⭐",
+      "unlocked": true
+    },
+    {
+      "id": "first_dungeon",
+      "name": "Aventureiro",
+      "description": "Completou uma dungeon run",
+      "icon": "🗡️",
+      "unlocked": false
+    },
+    {
+      "id": "dragon_slayer",
+      "name": "Mata-Dragão",
+      "description": "Derrotou o Dragão Ancião",
+      "icon": "🐉",
+      "unlocked": false
+    },
+    {
+      "id": "dungeon_master",
+      "name": "Mestre da Masmorra",
+      "description": "Completou 5 dungeon runs",
+      "icon": "🏰",
       "unlocked": false
     }
-  ]
+  ],
+  "inventory": {
+    "arma": {
+      "id": "espada_afiada",
+      "name": "Espada Afiada",
+      "slot": 0,
+      "rarity": 1,
+      "bonus_hp": 0,
+      "bonus_atk": 10,
+      "bonus_def": 0,
+      "bonus_vel": 2,
+      "bonus_luck": 0
+    },
+    "acessorio": {
+      "id": "anel_sorte",
+      "name": "Anel da Sorte",
+      "slot": 2,
+      "rarity": 0,
+      "bonus_hp": 0,
+      "bonus_atk": 0,
+      "bonus_def": 0,
+      "bonus_vel": 0,
+      "bonus_luck": 8
+    },
+    "gold": 51
+  },
+  "total_dungeon_runs": 0,
+  "total_bosses_defeated": 0
 }

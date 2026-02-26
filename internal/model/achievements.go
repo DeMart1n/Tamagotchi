@@ -26,6 +26,9 @@ func DefaultAchievements() []Achievement {
 		{ID: "evolved_adult", Name: "Adulto", Description: "Evoluiu para Adulto", Icon: "🌳"},
 		{ID: "evolved_elder", Name: "Ancião Sábio", Description: "Evoluiu para Ancião", Icon: "🌟"},
 		{ID: "level_10", Name: "Nível 10", Description: "Atingiu nível 10", Icon: "⭐"},
+		{ID: "first_dungeon", Name: "Aventureiro", Description: "Completou uma dungeon run", Icon: "🗡️"},
+		{ID: "dragon_slayer", Name: "Mata-Dragão", Description: "Derrotou o Dragão Ancião", Icon: "🐉"},
+		{ID: "dungeon_master", Name: "Mestre da Masmorra", Description: "Completou 5 dungeon runs", Icon: "🏰"},
 	}
 }
 
@@ -49,6 +52,9 @@ func CheckAchievements(tama *Tama) []string {
 		"evolved_adult":  tama.Stage >= StageAdult,
 		"evolved_elder":  tama.Stage >= StageElder,
 		"level_10":       tama.Level >= 10,
+		"first_dungeon":  tama.TotalDungeonRuns >= 1,
+		"dragon_slayer":  tama.TotalBossesDefeated >= 1,
+		"dungeon_master": tama.TotalDungeonRuns >= 5,
 	}
 
 	for i := range tama.Achievements {

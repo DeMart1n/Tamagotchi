@@ -17,6 +17,7 @@ const (
 	ModeNormal GameMode = iota
 	ModeGuess
 	ModeReact
+	ModeDungeon
 )
 
 // --- Jogo de Adivinhação ---

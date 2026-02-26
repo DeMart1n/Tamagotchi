@@ -17,6 +17,8 @@ type layout struct {
 	inputWidth    int
 	gameOverWidth int
 	gameBoxWidth  int
+	dungeonWidth  int
+	dungeonHeight int
 	tooSmall      bool
 }
 
@@ -33,6 +35,8 @@ func computeLayout(termWidth, termHeight int) layout {
 	inputWidth := contentWidth
 	gameOverWidth := clampInt(contentWidth*60/100, 40, 60)
 	gameBoxWidth := clampInt(contentWidth-4, 40, 200)
+	dungeonWidth := clampInt(contentWidth-2, 36, 80)
+	dungeonHeight := clampInt(termHeight-8, 20, 40)
 
 	return layout{
 		contentWidth:  contentWidth,
@@ -44,6 +48,8 @@ func computeLayout(termWidth, termHeight int) layout {
 		inputWidth:    inputWidth,
 		gameOverWidth: gameOverWidth,
 		gameBoxWidth:  gameBoxWidth,
+		dungeonWidth:  dungeonWidth,
+		dungeonHeight: dungeonHeight,
 		tooSmall:      false,
 	}
 }
