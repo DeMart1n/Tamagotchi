@@ -12,12 +12,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// --- Constantes de Layout ---
-const (
-	widthApp  = 80
-	heightApp = 24
-)
-
 // --- Estilos e Paleta de Cores ---
 var (
 	subtle    = lipgloss.AdaptiveColor{Light: "#D9DCCF", Dark: "#383838"}
@@ -25,12 +19,6 @@ var (
 	special   = lipgloss.AdaptiveColor{Light: "#43BF6D", Dark: "#73F59F"}
 	danger    = lipgloss.AdaptiveColor{Light: "#F25D94", Dark: "#FF5F87"}
 	warning   = lipgloss.AdaptiveColor{Light: "#F5A623", Dark: "#F7B538"}
-
-	// Estilos Base
-	styleBase = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FAFAFA")).
-			BorderForeground(highlight).
-			Padding(1, 2)
 
 	styleTitle = lipgloss.NewStyle().
 			Foreground(special).
@@ -43,23 +31,18 @@ var (
 	styleTamaBox = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(highlight).
-			Align(lipgloss.Center).
-			Width(30).
-			Height(14)
+			Align(lipgloss.Center)
 
 	styleStatsBox = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("#666")).
-			Padding(0, 2).
-			Width(44).
-			Height(14)
+			Padding(0, 2)
 
 	styleInput = lipgloss.NewStyle().
 			Border(lipgloss.NormalBorder(), false, false, true, false).
 			BorderForeground(subtle).
 			Padding(0, 1).
-			MarginTop(1).
-			Width(widthApp - 4)
+			MarginTop(1)
 
 	styleHelp = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#626262")).
@@ -124,6 +107,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		l := computeLayout(msg.Width, msg.Height)
+		if !l.tooSmall {
+			m.textInput.Width = l.inputWidth - 4
+		}
 
 	case tickMsg:
 		m.frame++
@@ -353,8 +340,16 @@ func (m *Model) renderAchievementsList() string {
 // --- View ---
 
 func (m Model) View() string {
+	l := computeLayout(m.width, m.height)
+
+	if l.tooSmall {
+		msg := lipgloss.NewStyle().Foreground(warning).Bold(true).
+			Render(fmt.Sprintf("Terminal muito pequeno (%dx%d)\nMínimo: %dx%d", m.width, m.height, minWidth, minHeight))
+		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, msg)
+	}
+
 	if m.tama.Dead {
-		return m.renderGameOver()
+		return m.renderGameOver(l)
 	}
 
 	// 1. Cabeçalho
@@ -368,7 +363,7 @@ func (m Model) View() string {
 			BorderForeground(highlight).
 			Align(lipgloss.Center).
 			Padding(2, 4).
-			Width(76).
+			Width(l.gameBoxWidth).
 			Render(m.guessGame.RenderView())
 		mainContent = gameView
 	} else if m.gameMode == ModeReact && m.reactGame != nil {
@@ -377,15 +372,15 @@ func (m Model) View() string {
 			BorderForeground(highlight).
 			Align(lipgloss.Center).
 			Padding(2, 4).
-			Width(76).
+			Width(l.gameBoxWidth).
 			Render(m.reactGame.RenderView())
 		mainContent = gameView
 	} else {
 		mainContent = lipgloss.JoinHorizontal(
 			lipgloss.Top,
-			m.renderAvatar(),
+			m.renderAvatar(l),
 			"  ",
-			m.renderStats(),
+			m.renderStats(l),
 		)
 	}
 
@@ -403,7 +398,7 @@ func (m Model) View() string {
 	msgView = fmt.Sprintf("\n%s %s", icon, msgStyle.Render(m.message))
 
 	// 4. Input
-	inputView := styleInput.Render(m.textInput.View())
+	inputView := styleInput.Width(l.inputWidth).Render(m.textInput.View())
 
 	// 5. Ajuda/Rodapé
 	var helpText string
@@ -437,14 +432,14 @@ func (m Model) View() string {
 	)
 }
 
-func (m Model) renderGameOver() string {
+func (m Model) renderGameOver(l layout) string {
 	styleDead := lipgloss.NewStyle().
 		Border(lipgloss.DoubleBorder()).
 		BorderForeground(danger).
 		Foreground(danger).
 		Align(lipgloss.Center).
 		Padding(2).
-		Width(50)
+		Width(l.gameOverWidth)
 
 	content := fmt.Sprintf(
 		"💀 GAME OVER 💀\n\n%s partiu dessa para melhor...\n\n(Pressione Ctrl+C para sair)",
@@ -458,7 +453,7 @@ func (m Model) renderGameOver() string {
 	)
 }
 
-func (m Model) renderAvatar() string {
+func (m Model) renderAvatar(l layout) string {
 	var art string
 	var mood string
 
@@ -533,21 +528,22 @@ func (m Model) renderAvatar() string {
 		lipgloss.NewStyle().Foreground(subtle).Italic(true).Render(mood),
 	)
 
-	return styleTamaBox.Render(content)
+	return styleTamaBox.Width(l.avatarWidth).Height(l.avatarHeight).Render(content)
 }
-func (m Model) renderStats() string {
+
+func (m Model) renderStats(l layout) string {
 	// Cabeçalho dos stats
 	header := lipgloss.NewStyle().Foreground(lipgloss.Color("#AAA")).Render("STATUS VITAIS")
 
 	// Renderiza as barras
 	// Assumindo valores máx do model (ex: 100), ajustei para constantes locais se precisar
 	// Ajuste as constantes `model.MaxHunger` conforme sua implementação real
-	barHunger := m.progressBar("Fome", m.tama.Hunger, model.MaxHunger)
-	barThirst := m.progressBar("Sede", m.tama.Thirst, model.MaxThirst)
-	barSleep := m.progressBar("Energia", m.tama.Sleepy, model.MaxSleepy)
-	barHappy := m.progressBar("Felicidade", m.tama.Happiness, model.MaxHappiness)
-	barAnger := m.progressBar("Calma", model.MaxAngry-m.tama.Angry, model.MaxAngry) // Invertido para lógica visual (barra cheia = bom)
-	barWeight := m.progressBar("Peso", m.tama.Weight, model.MaxWeight)
+	barHunger := m.progressBar("Fome", m.tama.Hunger, model.MaxHunger, l.barWidth)
+	barThirst := m.progressBar("Sede", m.tama.Thirst, model.MaxThirst, l.barWidth)
+	barSleep := m.progressBar("Energia", m.tama.Sleepy, model.MaxSleepy, l.barWidth)
+	barHappy := m.progressBar("Felicidade", m.tama.Happiness, model.MaxHappiness, l.barWidth)
+	barAnger := m.progressBar("Calma", model.MaxAngry-m.tama.Angry, model.MaxAngry, l.barWidth)
+	barWeight := m.progressBar("Peso", m.tama.Weight, model.MaxWeight, l.barWidth)
 
 	// Indicador de peso
 	weightStatus := ""
@@ -561,9 +557,9 @@ func (m Model) renderStats() string {
 
 	// Barra de XP
 	xpNeeded := model.XPForNextLevel(m.tama.Level)
-	barXP := m.progressBarXP("XP", m.tama.XP, xpNeeded)
+	barXP := m.progressBarXP("XP", m.tama.XP, xpNeeded, l.barWidth)
 
-	return styleStatsBox.Render(
+	return styleStatsBox.Width(l.statsWidth).Height(l.statsHeight).Render(
 		lipgloss.JoinVertical(lipgloss.Left,
 			header,
 			"\n",
@@ -579,8 +575,7 @@ func (m Model) renderStats() string {
 }
 
 // Helper para criar uma barra de progresso colorida
-func (m Model) progressBar(label string, value, max int) string {
-	width := 20
+func (m Model) progressBar(label string, value, max, width int) string {
 	pct := float64(value) / float64(max)
 	if pct < 0 {
 		pct = 0
@@ -615,8 +610,7 @@ func (m Model) progressBar(label string, value, max int) string {
 	return fmt.Sprintf("%-10s %s  %3d%%", label, bar, int(pct*100))
 }
 
-func (m Model) progressBarXP(label string, value, maxVal int) string {
-	width := 20
+func (m Model) progressBarXP(label string, value, maxVal, width int) string {
 	pct := float64(value) / float64(maxVal)
 	if pct > 1 {
 		pct = 1

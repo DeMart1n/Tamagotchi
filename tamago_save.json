@@ -1,35 +1,35 @@
 {
   "name": "Pochi",
-  "hunger": 9,
-  "thirst": 9,
-  "sleepy": 9,
-  "happiness": 17,
+  "hunger": 68,
+  "thirst": 38,
+  "sleepy": 73,
+  "happiness": 43,
   "angry": 0,
-  "weight": 50,
+  "weight": 35,
   "sleeping": false,
   "dead": false,
   "depressed": false,
   "pissed_of": false,
   "overweight": false,
   "underweight": false,
-  "last_saved": "2026-02-24T10:15:00.129944-03:00",
-  "xp": 0,
+  "last_saved": "2026-02-26T11:13:05.446961-03:00",
+  "xp": 9,
   "level": 1,
   "stage": 0,
-  "total_feeds": 0,
-  "total_waters": 0,
+  "total_feeds": 5,
+  "total_waters": 2,
   "total_pets": 0,
-  "total_sleeps": 0,
-  "total_exercises": 0,
+  "total_sleeps": 1,
+  "total_exercises": 5,
   "total_annoys": 0,
-  "total_ticks": 41,
+  "total_ticks": 8,
   "achievements": [
     {
       "id": "first_feed",
       "name": "Primeira Refeição",
       "description": "Alimentou o Tama pela primeira vez",
       "icon": "🍽️",
-      "unlocked": false
+      "unlocked": true
     },
     {
       "id": "first_pet",
@@ -43,7 +43,7 @@
       "name": "Primeiro Exercício",
       "description": "Exercitou o Tama pela primeira vez",
       "icon": "💪",
-      "unlocked": false
+      "unlocked": true
     },
     {
       "id": "night_owl",
