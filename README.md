@@ -20,48 +20,55 @@ O objetivo é evoluir o TamaGO para um RPG completo com sistema de níveis, bata
 
 ---
 
-## ✨ Funcionalidades Atuais (MVP)
+## ✨ Funcionalidades
 
-- **Sistema de Necessidades Vitais**: Fome, sede, energia, felicidade e humor
+### 🐾 Sistema de Pet Virtual
+- **Necessidades Vitais**: Fome, sede, energia, felicidade e humor
 - **Interface CLI Interativa**: Terminal UI responsivo e animado usando Bubble Tea
 - **Estados Emocionais**: Seu TamaGO pode ficar feliz, irritado, deprimido ou furioso
 - **Ciclo de Vida**: Sistema de degradação automática das estatísticas ao longo do tempo
-- **Comandos Interativos**: Alimente, hidrate, faça carinho e interaja com seu pet
-- **Animações**: Expressões faciais e emojis que mudam conforme o humor
+- **Evolução**: Baby → Criança → Adolescente → Adulto → Ancião
 - **Sistema de Morte**: Game Over se você não cuidar bem do seu TamaGO
+- **Achievements**: Conquistas desbloqueáveis por marcos no jogo
+
+### ⚔️ Sistema de Dungeon RPG
+- **Masmorra de 5 andares** com combate por turnos, salas de descanso e tesouro
+- **Combate tático**: Atacar, Defender, usar Itens ou Fugir
+- **12 equipamentos** em 3 slots (Arma, Armadura, Acessório) com 4 raridades
+- **9 tipos de inimigos** que escalam com o level do jogador
+- **Boss Fight**: Dragão Ancião no andar 5
+- **Inventário persistente**: Equipamentos e ouro salvos entre sessões
+- **Stats derivados**: HP, ATK, DEF, VEL e Sorte baseados no level/estágio do Tama
+- **Itens consumíveis**: Poções e elixirs comprados em salas de descanso
+- **3 conquistas exclusivas** de dungeon (Aventureiro, Mata-Dragão, Mestre da Masmorra)
+
+> 📄 Documentação completa do sistema de dungeon: [DUNGEON.md](DUNGEON.md)
 
 ---
 
-## 🚀 Roadmap - Visão Futura
+## 🚀 Roadmap
 
-### Versão 1.0 - Sistema de Progressão
-- [ ] Sistema de níveis e experiência (XP)
-- [ ] Evolução do TamaGO com diferentes formas
-- [ ] Estatísticas de atributos (Força, Defesa, Agilidade, etc.)
+### ✅ Implementado
+- [x] Sistema de necessidades vitais e estados emocionais
+- [x] Interface CLI com Bubble Tea
+- [x] Sistema de níveis e experiência (XP)
+- [x] Evolução do TamaGO com diferentes estágios
+- [x] Stats de combate (HP, ATK, DEF, VEL, Sorte)
+- [x] Dungeon RPG com 5 andares e boss fight
+- [x] Sistema de combate por turnos
+- [x] Equipamentos com raridades (Comum → Lendário)
+- [x] Sistema de inventário e economia (ouro)
+- [x] Itens consumíveis (poções e elixirs)
+- [x] Achievements / Conquistas
+- [x] Persistência de dados (save/load)
 
-### Versão 2.0 - Sistema de Combate
-- [ ] Batalhas entre TamaGOs (PvP)
-- [ ] Batalhas contra NPCs/Monstros (PvE)
-- [ ] Sistema de turnos tático
-- [ ] Habilidades especiais e movimentos
-
-### Versão 3.0 - Equipamentos e Customização
-- [ ] Sistema de inventário
-- [ ] Equipamentos (armas, armaduras, acessórios)
-- [ ] Lojas para comprar itens
-- [ ] Sistema de moedas/economia
-
-### Versão 4.0 - Multiplayer e Rankings
-- [ ] Ranking local de TamaGOs
+### 🔮 Futuro
+- [ ] Batalhas PvP entre TamaGOs
 - [ ] Ranking global online
-- [ ] Sistema de amizades e trocas
-- [ ] Torneios e eventos especiais
-
-### Versão 5.0 - Mundo Expandido
+- [ ] Novas dungeons e biomas
+- [ ] Habilidades especiais e classes
 - [ ] Missões e quests
-- [ ] Exploração de dungeons
-- [ ] Boss fights
-- [ ] História e lore do mundo TamaGO
+- [ ] Sistema de amizades e trocas
 
 ---
 
@@ -123,21 +130,30 @@ go run main.go
 | `pet` | `p` | Faz carinho no TamaGO (aumenta felicidade) |
 | `sleep` | `s` | Coloca o TamaGO para dormir (recupera energia) |
 | `annoy` | `a` | Irrita o TamaGO (aumenta raiva) |
+| `dungeon` | `d` | Entra na masmorra (requer Level 3+) |
 | `status` | - | Atualiza e mostra o status atual |
 | `quit`, `exit`, `q` | - | Sai do jogo |
+
+### Comandos Secretos
+
+| Comando | Descrição |
+|---------|-----------|
+| `setlvl <n>` | Seta o level do Tama diretamente (ex: `setlvl 10`) |
 
 ### Controles
 
 - **Enter**: Envia o comando digitado
-- **ESC / Ctrl+C**: Sai do jogo
+- **ESC**: Sai do jogo / Sai da dungeon
+- **Ctrl+C**: Sai do jogo
 
 ### Dicas
 
 - Mantenha todas as barras de status equilibradas
 - Se a fome ou sede chegarem a zero, seu TamaGO pode morrer
-- Um TamaGO feliz tem melhor desempenho
+- Um TamaGO feliz tem melhor desempenho (bônus de stats na dungeon!)
 - Não o irrite muito, ou ele ficará furioso!
 - As estatísticas diminuem automaticamente com o tempo, fique atento!
+- Alcance Level 3 para desbloquear a Dungeon RPG
 
 ---
 
@@ -146,18 +162,34 @@ go run main.go
 ```
 TamaGO/
 ├── tamago/
-│   ├── main.go           # Ponto de entrada da aplicação
-│   └── tamago            # Executável compilado
+│   └── main.go              # Ponto de entrada e migração de saves
 ├── internal/
 │   ├── model/
-│   │   └── tama.go       # Modelo de dados do Tamagotchi
-│   └── ui/
-│       ├── tui.go        # Interface do terminal (Bubble Tea)
-│       ├── view.go       # Renderização da interface
-│       └── update.go     # Lógica de atualização e comandos
-├── go.mod                # Dependências do projeto
-├── go.sum                # Checksums das dependências
-└── README.md             # Este arquivo
+│   │   ├── tama.go          # Modelo de dados do Tamagotchi
+│   │   ├── evolution.go     # Sistema de evolução por estágios
+│   │   ├── achievements.go  # Conquistas desbloqueáveis
+│   │   └── events.go        # Sistema de eventos
+│   ├── ui/
+│   │   ├── tui.go           # Interface do terminal (Bubble Tea)
+│   │   ├── view.go          # Renderização da interface
+│   │   ├── update.go        # Lógica de atualização e comandos
+│   │   ├── minigames.go     # Modos de jogo (dungeon, etc.)
+│   │   └── dungeon_view.go  # Renderização da dungeon
+│   ├── dungeon/
+│   │   ├── dungeon.go       # Máquina de estados principal
+│   │   ├── combat.go        # Motor de combate por turnos
+│   │   ├── enemy.go         # Inimigos e pools por andar
+│   │   ├── floor.go         # Geração de andares e salas
+│   │   ├── equipment.go     # Equipamentos e inventário
+│   │   ├── items.go         # Itens consumíveis
+│   │   ├── stats.go         # Stats de combate derivados
+│   │   └── ascii_art.go     # ASCII art dos inimigos
+│   └── persistence/
+│       └── save.go          # Sistema de save/load
+├── DUNGEON.md               # Documentação do sistema de dungeon
+├── go.mod                   # Dependências do projeto
+├── go.sum                   # Checksums das dependências
+└── README.md                # Este arquivo
 ```
 
 ---
