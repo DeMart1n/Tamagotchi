@@ -117,6 +117,18 @@ Ou compile e execute diretamente:
 go run main.go
 ```
 
+No docker:
+
+```bash
+docker compose up -d --build
+```
+
+```bash
+docker compose exec tamago sh
+# dentro do container
+./tamago
+```
+
 ---
 
 ## 🎮 Como Jogar
