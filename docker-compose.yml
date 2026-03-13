@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  tamago:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile
+    image: tamago:latest
+    tty: true
+    stdin_open: true
+    environment:
+      - TAMAGO_CHILD=1
+    working_dir: /app
+    volumes:
+      - ./tamago_save.json:/app/tamago_save.json
+      - ./DUNGEON.md:/app/DUNGEON.md:ro
+    restart: unless-stopped

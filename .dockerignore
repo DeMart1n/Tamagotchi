@@ -1,0 +1,15 @@
+.git
+bin
+vendor
+node_modules
+*.log
+*.tmp
+*.md
+!DUNGEON.md
+*.sum
+!go.sum
+*.zip
+*.tar.gz
+.DS_Store
+
+**/*_test.go
