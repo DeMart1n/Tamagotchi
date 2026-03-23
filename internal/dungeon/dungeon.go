@@ -28,6 +28,7 @@ const (
 type DungeonRun struct {
 	Phase       Phase
 	Tama        *model.Tama
+	CurrentBiome Biome
 	Stats       CombatStats
 	Inv         *Inventory
 	ItemBag     *ItemBag
@@ -51,14 +52,16 @@ type DungeonRun struct {
 // NewDungeonRun cria uma nova sessão de dungeon.
 func NewDungeonRun(tama *model.Tama, inv *Inventory) *DungeonRun {
 	stats := DeriveCombatStats(tama).ApplyEquipment(inv)
+	biome := ParseBiome(tama.CurrentBiome)
 	return &DungeonRun{
-		Phase:    PhaseMenuPrincipal,
-		Tama:     tama,
-		Stats:    stats,
-		Inv:      inv,
-		ItemBag:  NewItemBag(),
-		FloorNum: 0,
-		Message:  "Bem-vindo a Masmorra!",
+		Phase:       PhaseMenuPrincipal,
+		Tama:        tama,
+		CurrentBiome: biome,
+		Stats:       stats,
+		Inv:         inv,
+		ItemBag:     NewItemBag(),
+		FloorNum:    0,
+		Message:     "Bem-vindo a Masmorra!",
 	}
 }
 
@@ -114,7 +117,9 @@ func (d *DungeonRun) handleInventario(input string) {
 
 func (d *DungeonRun) startDungeon() {
 	d.FloorNum = 1
-	d.Floor = GenerateFloor(1, d.Tama.Level)
+	d.CurrentBiome = RandomBiome()
+	d.Tama.CurrentBiome = d.CurrentBiome.String()
+	d.Floor = GenerateFloor(1, d.Tama.Level, d.CurrentBiome)
 	d.Stats = DeriveCombatStats(d.Tama).ApplyEquipment(d.Inv)
 	d.TotalXP = 0
 	d.TotalGold = 0
@@ -130,17 +135,23 @@ func (d *DungeonRun) enterCurrentRoom() {
 	switch room.Type {
 	case RoomCombat:
 		d.Phase = PhaseCombate
-		d.Combat = NewCombat(&d.Stats, room.Enemy)
+		d.Combat = NewCombat(&d.Stats, room.Enemy, d.CurrentBiome)
 		d.Message = fmt.Sprintf("Um %s apareceu!", room.Enemy.Name)
 		d.SubMessage = ""
 	case RoomBoss:
 		d.Phase = PhaseCombate
-		d.Combat = NewCombat(&d.Stats, room.Enemy)
+		d.Combat = NewCombat(&d.Stats, room.Enemy, d.CurrentBiome)
 		d.Message = fmt.Sprintf("BOSS: %s!", room.Enemy.Name)
 		d.SubMessage = ""
 	case RoomRest:
 		d.Phase = PhaseDescanso
 		heal := d.Stats.HPMax / 4
+		if d.CurrentBiome == BiomeAbyssal {
+			heal = heal / 2
+			if heal < 1 {
+				heal = 1
+			}
+		}
 		d.Stats.HPCurrent += heal
 		if d.Stats.HPCurrent > d.Stats.HPMax {
 			d.Stats.HPCurrent = d.Stats.HPMax
@@ -250,7 +261,7 @@ func (d *DungeonRun) handleCombatResult(input string) {
 		// Chance de drop de equipamento (20%)
 		var lootMsg string
 		if rand.Intn(100) < 20 {
-			loot := randomLootForFloor(d.FloorNum)
+			loot := randomLootForFloor(d.FloorNum, d.CurrentBiome)
 			d.PendingLoot = loot
 			lootMsg = fmt.Sprintf(" Dropou: %s!", loot.Name)
 		}
@@ -379,7 +390,7 @@ func (d *DungeonRun) handleTesouro(input string) {
 func (d *DungeonRun) handleFimAndar(input string) {
 	// Qualquer input avança para o próximo andar
 	d.FloorNum++
-	d.Floor = GenerateFloor(d.FloorNum, d.Tama.Level)
+	d.Floor = GenerateFloor(d.FloorNum, d.Tama.Level, d.CurrentBiome)
 	d.Message = fmt.Sprintf("Entrando no Andar %d...", d.FloorNum)
 	d.enterCurrentRoom()
 }

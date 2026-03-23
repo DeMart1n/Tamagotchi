@@ -89,6 +89,7 @@ func main() {
 			Happiness:    50,
 			Angry:        0,
 			Weight:       50,
+			CurrentBiome: "Florestal",
 			Achievements: model.DefaultAchievements(),
 		}
 	}

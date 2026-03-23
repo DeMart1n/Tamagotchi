@@ -27,24 +27,30 @@ const (
 type Combat struct {
 	Player    *CombatStats
 	Enemy     *Enemy
+	Biome     Biome
+	Modifier  BiomeModifier
 	State     CombatState
 	Log       []string
 	Turn      int
 	Defending bool // Jogador está defendendo neste turno
 	ATKBuff   int  // Buff temporário de ATK (de elixir)
+	FrozenFor int  // Quantidade de turnos congelado
 	Fled      bool // Jogador fugiu com sucesso
 	Won       bool
 	Lost      bool
 }
 
 // NewCombat cria um novo combate.
-func NewCombat(player *CombatStats, enemy *Enemy) *Combat {
+func NewCombat(player *CombatStats, enemy *Enemy, biome Biome) *Combat {
+	modifier := ModifierForBiome(biome)
 	return &Combat{
-		Player: player,
-		Enemy:  enemy,
-		State:  CombatChoosing,
-		Log:    []string{},
-		Turn:   1,
+		Player:   player,
+		Enemy:    enemy,
+		Biome:    biome,
+		Modifier: modifier,
+		State:    CombatChoosing,
+		Log:      []string{},
+		Turn:     1,
 	}
 }
 
@@ -57,6 +63,29 @@ func (c *Combat) IsOver() bool {
 func (c *Combat) ExecuteAction(action CombatAction, itemBag *ItemBag, itemIndex int) {
 	c.Log = []string{}
 	c.Defending = false
+	c.applyBiomeTurnEffects()
+
+	if c.Player.HPCurrent <= 0 {
+		c.Player.HPCurrent = 0
+		c.Lost = true
+		c.Log = append(c.Log, "Voce sucumbiu aos efeitos do bioma...")
+		c.State = CombatResolved
+		return
+	}
+
+	if c.FrozenFor > 0 {
+		c.FrozenFor--
+		c.Log = append(c.Log, "Voce esta congelado e perdeu o turno!")
+		c.enemyTurn()
+		if c.Player.HPCurrent <= 0 {
+			c.Player.HPCurrent = 0
+			c.Lost = true
+			c.Log = append(c.Log, "Voce foi derrotado...")
+		}
+		c.Turn++
+		c.State = CombatResolved
+		return
+	}
 
 	switch action {
 	case ActionAtacar:
@@ -148,6 +177,10 @@ func (c *Combat) enemyTurn() {
 		baseDmg = 1
 	}
 
+	if c.Modifier.EnemyAttackBonusPct > 0 {
+		baseDmg += (baseDmg * c.Modifier.EnemyAttackBonusPct) / 100
+	}
+
 	// Variância ±20%
 	variance := float64(baseDmg) * 0.2
 	dmg := baseDmg + int(float64(rand.Intn(int(variance*2+1)))-variance)
@@ -163,10 +196,38 @@ func (c *Combat) enemyTurn() {
 		}
 	}
 
+	if c.Enemy.IsFire && c.Modifier.PlayerFireVulnerability > 0 {
+		dmg += (dmg * c.Modifier.PlayerFireVulnerability) / 100
+	}
+
+	critChance := 5 + c.Modifier.EnemyLuckBonusPct
+	if rand.Intn(100) < critChance {
+		dmg = int(float64(dmg) * 1.5)
+		c.Log = append(c.Log, fmt.Sprintf("CRITICO inimigo! %s acertou um golpe certeiro!", c.Enemy.Name))
+	}
+
 	c.Player.HPCurrent -= dmg
 	c.Log = append(c.Log, fmt.Sprintf("%s atacou! %d de dano!", c.Enemy.Name, dmg))
 
+	if c.Modifier.FreezeChancePct > 0 && rand.Intn(100) < c.Modifier.FreezeChancePct {
+		c.FrozenFor = 1
+		c.Log = append(c.Log, "Voce foi congelado!")
+	}
+
 	_ = enemyDefending // previne warning
+}
+
+func (c *Combat) applyBiomeTurnEffects() {
+	if c.Modifier.PlayerFireDotPctMaxHP <= 0 {
+		return
+	}
+
+	dot := (c.Player.HPMax * c.Modifier.PlayerFireDotPctMaxHP) / 100
+	if dot < 1 {
+		dot = 1
+	}
+	c.Player.HPCurrent -= dot
+	c.Log = append(c.Log, fmt.Sprintf("O calor do bioma causa %d de dano continuo!", dot))
 }
 
 func (c *Combat) useItem(bag *ItemBag, index int) {
@@ -198,8 +259,17 @@ func (c *Combat) tryFlee() {
 		return
 	}
 
+	playerSpeed := c.Player.Velocidade
+	if c.Modifier.PlayerSpeedPenaltyPct > 0 {
+		penalty := (playerSpeed * c.Modifier.PlayerSpeedPenaltyPct) / 100
+		playerSpeed -= penalty
+		if playerSpeed < 1 {
+			playerSpeed = 1
+		}
+	}
+
 	// 40% base + 2% por vantagem de velocidade
-	chance := 40 + (c.Player.Velocidade-c.Enemy.Velocidade)*2
+	chance := 40 + (playerSpeed-c.Enemy.Velocidade)*2
 	if chance < 10 {
 		chance = 10
 	}

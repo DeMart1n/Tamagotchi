@@ -609,6 +609,13 @@ func (m Model) renderAvatar(l layout) string {
 func (m Model) renderStats(l layout) string {
 	// Cabeçalho dos stats
 	header := lipgloss.NewStyle().Foreground(lipgloss.Color("#AAA")).Render("STATUS VITAIS")
+	biomeName := m.tama.CurrentBiome
+	if biomeName == "" {
+		biomeName = dungeon.BiomeForest.String()
+	}
+	biome := dungeon.ParseBiome(biomeName)
+	biomeLine := lipgloss.NewStyle().Foreground(highlight).Render("Bioma: " + biomeName)
+	biomeAttrLine := lipgloss.NewStyle().Foreground(subtle).Render("Atributos: " + m.biomeAttributesSummary(biome))
 
 	// Renderiza as barras
 	// Assumindo valores máx do model (ex: 100), ajustei para constantes locais se precisar
@@ -637,6 +644,8 @@ func (m Model) renderStats(l layout) string {
 	return styleStatsBox.Width(l.statsWidth).Height(l.statsHeight).Render(
 		lipgloss.JoinVertical(lipgloss.Left,
 			header,
+			biomeLine,
+			biomeAttrLine,
 			"\n",
 			barHunger,
 			barThirst,
