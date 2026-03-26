@@ -60,6 +60,8 @@ func (m Model) renderDungeon(l layout) string {
 	var content string
 
 	switch d.Phase {
+	case dungeon.PhaseIntro:
+		content = m.renderDungeonIntro(l)
 	case dungeon.PhaseMenuPrincipal:
 		content = m.renderDungeonMenu(l)
 	case dungeon.PhaseInventario:
@@ -85,6 +87,19 @@ func (m Model) renderDungeon(l layout) string {
 	}
 
 	return styleDungeonBox.Width(l.dungeonWidth).Render(content)
+}
+
+// renderDungeonIntro mostra a arte de introdução do bioma
+func (m Model) renderDungeonIntro(l layout) string {
+	d := m.dungeonGame
+	introMsg := dungeon.GetBiomeIntroMessage(d.CurrentBiome)
+
+	var lines []string
+	lines = append(lines, introMsg)
+	lines = append(lines, "")
+	lines = append(lines, "  Aperte ENTER para continuar...")
+
+	return strings.Join(lines, "\n")
 }
 
 func (m Model) renderDungeonMenu(l layout) string {

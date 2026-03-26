@@ -10,7 +10,8 @@ import (
 type Phase int
 
 const (
-	PhaseMenuPrincipal Phase = iota
+	PhaseIntro Phase = iota
+	PhaseMenuPrincipal
 	PhaseInventario
 	PhaseExplorando
 	PhaseCombate
@@ -26,20 +27,20 @@ const (
 
 // DungeonRun orquestra toda a sessão de dungeon.
 type DungeonRun struct {
-	Phase       Phase
-	Tama        *model.Tama
+	Phase        Phase
+	Tama         *model.Tama
 	CurrentBiome Biome
-	Stats       CombatStats
-	Inv         *Inventory
-	ItemBag     *ItemBag
-	Floor       *Floor
-	FloorNum    int
-	Combat      *Combat
-	Message     string
-	SubMessage  string
-	TotalXP     int
-	TotalGold   int
-	PendingLoot *Equipment // Equipamento encontrado esperando aceitar/recusar
+	Stats        CombatStats
+	Inv          *Inventory
+	ItemBag      *ItemBag
+	Floor        *Floor
+	FloorNum     int
+	Combat       *Combat
+	Message      string
+	SubMessage   string
+	TotalXP      int
+	TotalGold    int
+	PendingLoot  *Equipment // Equipamento encontrado esperando aceitar/recusar
 
 	// Estado do submenu de itens no combate
 	ChoosingItem bool
@@ -52,16 +53,16 @@ type DungeonRun struct {
 // NewDungeonRun cria uma nova sessão de dungeon.
 func NewDungeonRun(tama *model.Tama, inv *Inventory) *DungeonRun {
 	stats := DeriveCombatStats(tama).ApplyEquipment(inv)
-	biome := ParseBiome(tama.CurrentBiome)
+	biome := RandomBiome()
 	return &DungeonRun{
-		Phase:       PhaseMenuPrincipal,
-		Tama:        tama,
+		Phase:        PhaseIntro,
+		Tama:         tama,
 		CurrentBiome: biome,
-		Stats:       stats,
-		Inv:         inv,
-		ItemBag:     NewItemBag(),
-		FloorNum:    0,
-		Message:     "Bem-vindo a Masmorra!",
+		Stats:        stats,
+		Inv:          inv,
+		ItemBag:      NewItemBag(),
+		FloorNum:     0,
+		Message:      "Bem-vindo a Masmorra!",
 	}
 }
 
@@ -69,6 +70,8 @@ func NewDungeonRun(tama *model.Tama, inv *Inventory) *DungeonRun {
 // Retorna true se a dungeon terminou (PhaseDone).
 func (d *DungeonRun) HandleInput(input string) bool {
 	switch d.Phase {
+	case PhaseIntro:
+		d.handleIntro(input)
 	case PhaseMenuPrincipal:
 		d.handleMenuPrincipal(input)
 	case PhaseInventario:
@@ -97,6 +100,13 @@ func (d *DungeonRun) HandleInput(input string) bool {
 	return d.Phase == PhaseDone
 }
 
+// handleIntro processa a tela de introdução com a arte do bioma
+func (d *DungeonRun) handleIntro(input string) {
+	// Qualquer input avança para o menu principal
+	d.Phase = PhaseMenuPrincipal
+	d.Message = "Bem-vindo a Masmorra!"
+}
+
 func (d *DungeonRun) handleMenuPrincipal(input string) {
 	switch input {
 	case "1":
@@ -117,8 +127,6 @@ func (d *DungeonRun) handleInventario(input string) {
 
 func (d *DungeonRun) startDungeon() {
 	d.FloorNum = 1
-	d.CurrentBiome = RandomBiome()
-	d.Tama.CurrentBiome = d.CurrentBiome.String()
 	d.Floor = GenerateFloor(1, d.Tama.Level, d.CurrentBiome)
 	d.Stats = DeriveCombatStats(d.Tama).ApplyEquipment(d.Inv)
 	d.TotalXP = 0
