@@ -1,7 +1,7 @@
 package dungeon
 
 import (
-	"Pessoal/internal/model"
+	"github.com/DeMart1n/Tamagotchi/internal/model"
 	"fmt"
 	"math/rand"
 )

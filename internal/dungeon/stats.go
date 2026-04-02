@@ -1,6 +1,6 @@
 package dungeon
 
-import "Pessoal/internal/model"
+import "github.com/DeMart1n/Tamagotchi/internal/model"
 
 // CombatStats representa os atributos de combate derivados do Tama.
 type CombatStats struct {

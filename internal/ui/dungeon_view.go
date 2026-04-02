@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"Pessoal/internal/dungeon"
+	"github.com/DeMart1n/Tamagotchi/internal/dungeon"
 	"fmt"
 	"strings"
 

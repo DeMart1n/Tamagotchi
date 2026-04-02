@@ -1,9 +1,9 @@
 package ui
 
 import (
-	"Pessoal/internal/dungeon"
-	"Pessoal/internal/model"
-	"Pessoal/internal/persistence"
+	"github.com/DeMart1n/Tamagotchi/internal/dungeon"
+	"github.com/DeMart1n/Tamagotchi/internal/model"
+	"github.com/DeMart1n/Tamagotchi/internal/persistence"
 	"encoding/json"
 	"fmt"
 	"strconv"

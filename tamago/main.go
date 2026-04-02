@@ -1,9 +1,9 @@
 package main
 
 import (
-	"Pessoal/internal/model"
-	"Pessoal/internal/persistence"
-	"Pessoal/internal/ui"
+	"github.com/DeMart1n/Tamagotchi/internal/model"
+	"github.com/DeMart1n/Tamagotchi/internal/persistence"
+	"github.com/DeMart1n/Tamagotchi/internal/ui"
 	"fmt"
 	"os"
 	"os/exec"
