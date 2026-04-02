@@ -10,7 +10,8 @@ import (
 type Phase int
 
 const (
-	PhaseMenuPrincipal Phase = iota
+	PhaseIntro Phase = iota
+	PhaseMenuPrincipal
 	PhaseInventario
 	PhaseExplorando
 	PhaseCombate
@@ -26,19 +27,20 @@ const (
 
 // DungeonRun orquestra toda a sessão de dungeon.
 type DungeonRun struct {
-	Phase       Phase
-	Tama        *model.Tama
-	Stats       CombatStats
-	Inv         *Inventory
-	ItemBag     *ItemBag
-	Floor       *Floor
-	FloorNum    int
-	Combat      *Combat
-	Message     string
-	SubMessage  string
-	TotalXP     int
-	TotalGold   int
-	PendingLoot *Equipment // Equipamento encontrado esperando aceitar/recusar
+	Phase        Phase
+	Tama         *model.Tama
+	CurrentBiome Biome
+	Stats        CombatStats
+	Inv          *Inventory
+	ItemBag      *ItemBag
+	Floor        *Floor
+	FloorNum     int
+	Combat       *Combat
+	Message      string
+	SubMessage   string
+	TotalXP      int
+	TotalGold    int
+	PendingLoot  *Equipment // Equipamento encontrado esperando aceitar/recusar
 
 	// Estado do submenu de itens no combate
 	ChoosingItem bool
@@ -51,14 +53,16 @@ type DungeonRun struct {
 // NewDungeonRun cria uma nova sessão de dungeon.
 func NewDungeonRun(tama *model.Tama, inv *Inventory) *DungeonRun {
 	stats := DeriveCombatStats(tama).ApplyEquipment(inv)
+	biome := RandomBiome()
 	return &DungeonRun{
-		Phase:    PhaseMenuPrincipal,
-		Tama:     tama,
-		Stats:    stats,
-		Inv:      inv,
-		ItemBag:  NewItemBag(),
-		FloorNum: 0,
-		Message:  "Bem-vindo a Masmorra!",
+		Phase:        PhaseIntro,
+		Tama:         tama,
+		CurrentBiome: biome,
+		Stats:        stats,
+		Inv:          inv,
+		ItemBag:      NewItemBag(),
+		FloorNum:     0,
+		Message:      "Bem-vindo a Masmorra!",
 	}
 }
 
@@ -66,6 +70,8 @@ func NewDungeonRun(tama *model.Tama, inv *Inventory) *DungeonRun {
 // Retorna true se a dungeon terminou (PhaseDone).
 func (d *DungeonRun) HandleInput(input string) bool {
 	switch d.Phase {
+	case PhaseIntro:
+		d.handleIntro(input)
 	case PhaseMenuPrincipal:
 		d.handleMenuPrincipal(input)
 	case PhaseInventario:
@@ -94,6 +100,13 @@ func (d *DungeonRun) HandleInput(input string) bool {
 	return d.Phase == PhaseDone
 }
 
+// handleIntro processa a tela de introdução com a arte do bioma
+func (d *DungeonRun) handleIntro(input string) {
+	// Qualquer input avança para o menu principal
+	d.Phase = PhaseMenuPrincipal
+	d.Message = "Bem-vindo a Masmorra!"
+}
+
 func (d *DungeonRun) handleMenuPrincipal(input string) {
 	switch input {
 	case "1":
@@ -114,7 +127,7 @@ func (d *DungeonRun) handleInventario(input string) {
 
 func (d *DungeonRun) startDungeon() {
 	d.FloorNum = 1
-	d.Floor = GenerateFloor(1, d.Tama.Level)
+	d.Floor = GenerateFloor(1, d.Tama.Level, d.CurrentBiome)
 	d.Stats = DeriveCombatStats(d.Tama).ApplyEquipment(d.Inv)
 	d.TotalXP = 0
 	d.TotalGold = 0
@@ -130,17 +143,23 @@ func (d *DungeonRun) enterCurrentRoom() {
 	switch room.Type {
 	case RoomCombat:
 		d.Phase = PhaseCombate
-		d.Combat = NewCombat(&d.Stats, room.Enemy)
+		d.Combat = NewCombat(&d.Stats, room.Enemy, d.CurrentBiome)
 		d.Message = fmt.Sprintf("Um %s apareceu!", room.Enemy.Name)
 		d.SubMessage = ""
 	case RoomBoss:
 		d.Phase = PhaseCombate
-		d.Combat = NewCombat(&d.Stats, room.Enemy)
+		d.Combat = NewCombat(&d.Stats, room.Enemy, d.CurrentBiome)
 		d.Message = fmt.Sprintf("BOSS: %s!", room.Enemy.Name)
 		d.SubMessage = ""
 	case RoomRest:
 		d.Phase = PhaseDescanso
 		heal := d.Stats.HPMax / 4
+		if d.CurrentBiome == BiomeAbyssal {
+			heal = heal / 2
+			if heal < 1 {
+				heal = 1
+			}
+		}
 		d.Stats.HPCurrent += heal
 		if d.Stats.HPCurrent > d.Stats.HPMax {
 			d.Stats.HPCurrent = d.Stats.HPMax
@@ -250,7 +269,7 @@ func (d *DungeonRun) handleCombatResult(input string) {
 		// Chance de drop de equipamento (20%)
 		var lootMsg string
 		if rand.Intn(100) < 20 {
-			loot := randomLootForFloor(d.FloorNum)
+			loot := randomLootForFloor(d.FloorNum, d.CurrentBiome)
 			d.PendingLoot = loot
 			lootMsg = fmt.Sprintf(" Dropou: %s!", loot.Name)
 		}
@@ -379,7 +398,7 @@ func (d *DungeonRun) handleTesouro(input string) {
 func (d *DungeonRun) handleFimAndar(input string) {
 	// Qualquer input avança para o próximo andar
 	d.FloorNum++
-	d.Floor = GenerateFloor(d.FloorNum, d.Tama.Level)
+	d.Floor = GenerateFloor(d.FloorNum, d.Tama.Level, d.CurrentBiome)
 	d.Message = fmt.Sprintf("Entrando no Andar %d...", d.FloorNum)
 	d.enterCurrentRoom()
 }

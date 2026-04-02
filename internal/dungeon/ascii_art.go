@@ -1,5 +1,10 @@
 package dungeon
 
+import (
+	"fmt"
+	"strings"
+)
+
 // EnemyArt retorna a ASCII art de um inimigo pelo ID.
 func EnemyArt(enemyName string) string {
 	art, ok := enemyArtMap[enemyName]
@@ -121,4 +126,161 @@ func HPBar(current, max, width int) string {
 		}
 	}
 	return bar
+}
+
+// BiomeArt retorna a ASCII art de introdução para um bioma
+func BiomeArt(biome Biome) string {
+	switch biome {
+	case BiomeForest:
+		return forestArt
+	case BiomeIcy:
+		return icyArt
+	case BiomeVolcanic:
+		return volcanicArt
+	case BiomeAbyssal:
+		return abyssalArt
+	default:
+		return defaultBiomeArt
+	}
+}
+
+// Artes dos biomas
+var forestArt = `
+    🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲
+    🌲                                 🌲
+    🌲     ░░░░░░░░░░░░░░░░░░░░░░░     🌲
+    🌲     ░                       ░     🌲
+    🌲     ░   🍃  FLORESTA  🍃    ░     🌲
+    🌲     ░        ENCANTADA       ░     🌲
+    🌲     ░                       ░     🌲
+    🌲     ░░░░░░░░░░░░░░░░░░░░░░░     🌲
+    🌲                                 🌲
+    🌲     Cogumelos brilham no chão    🌲
+    🌲     O ar é puro e fresco...      🌲
+    🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲
+`
+
+var icyArt = `
+    ❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️
+    ❄️                                 ❄️
+    ❄️     ░░░░░░░░░░░░░░░░░░░░░░░     ❄️
+    ❄️     ░                       ░     ❄️
+    ❄️     ░   ❄️  TUNDRA  ❄️      ░     ❄️
+    ❄️     ░      CONGELANTE       ░     ❄️
+    ❄️     ░                       ░     ❄️
+    ❄️     ░░░░░░░░░░░░░░░░░░░░░░░     ❄️
+    ❄️                                 ❄️
+    ❄️     O vento gelado corta a pele  ❄️
+    ❄️     Seu hálito congela no ar...  ❄️
+    ❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️
+`
+
+var volcanicArt = `
+    🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋
+    🌋                                 🌋
+    🌋     ░░░░░░░░░░░░░░░░░░░░░░░     🌋
+    🌋     ░                       ░     🌋
+    🌋     ░   🔥 MONTANHAS 🔥     ░     🌋
+    🌋     ░      DE FOGO          ░     🌋
+    🌋     ░                       ░     🌋
+    🌋     ░░░░░░░░░░░░░░░░░░░░░░░     🌋
+    🌋                                 🌋
+    🌋     Lava borbulha ao redor...    🌋
+    🌋     O calor é sufocante!         🌋
+    🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋
+`
+
+var abyssalArt = `
+    🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+    🌊                                 🌊
+    🌊     ░░░░░░░░░░░░░░░░░░░░░░░     🌊
+    🌊     ░                       ░     🌊
+    🌊     ░   🌊  ABISSO  🌊      ░     🌊
+    🌊     ░    MISTERIOSO         ░     🌊
+    🌊     ░                       ░     🌊
+    🌊     ░░░░░░░░░░░░░░░░░░░░░░░     🌊
+    🌊                                 🌊
+    🌊     Escuridão infinita...        🌊
+    🌊     Algo observa das sombras...  🌊
+    🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+`
+
+var defaultBiomeArt = `
+    🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️
+    🏔️                                 🏔️
+    🏔️     ░░░░░░░░░░░░░░░░░░░░░░░     🏔️
+    🏔️     ░                       ░     🏔️
+    🏔️     ░   🏔️  MASMORRA  🏔️   ░     🏔️
+    🏔️     ░       SOMBRIA        ░     🏔️
+    🏔️     ░                       ░     🏔️
+    🏔️     ░░░░░░░░░░░░░░░░░░░░░░░     🏔️
+    🏔️                                 🏔️
+    🏔️     Pedras antigas te observam   🏔️
+    🏔️     O perigo espreita...         🏔️
+    🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️
+`
+
+// GetBiomeIntroMessage retorna a string formatada com a arte do bioma e todos os efeitos
+func GetBiomeIntroMessage(biome Biome) string {
+	art := BiomeArt(biome)
+	modifier := ModifierForBiome(biome)
+
+	var sb strings.Builder
+	sb.WriteString(art)
+	sb.WriteString("\n\n")
+	sb.WriteString(strings.Repeat("=", 50))
+	sb.WriteString("\n")
+	sb.WriteString(fmt.Sprintf("📍 BIOMA: %s\n", biome.String()))
+	sb.WriteString(fmt.Sprintf("📖 Efeitos: %s\n", formatBiomeEffects(modifier)))
+	sb.WriteString(strings.Repeat("=", 50))
+	sb.WriteString("\n")
+	sb.WriteString("\n✨ Pressione ENTER para entrar na masmorra...")
+
+	return sb.String()
+}
+
+// formatBiomeEffects formata os efeitos do bioma em uma string legível
+func formatBiomeEffects(m BiomeModifier) string {
+	var effects []string
+	if m.HungerRecoveryBonus > 0 {
+		effects = append(effects, fmt.Sprintf("+%d recuperação fome", m.HungerRecoveryBonus))
+	}
+	if m.FriendlyEncounterChance > 0 {
+		effects = append(effects, fmt.Sprintf("+%d%% encontros amistosos", m.FriendlyEncounterChance))
+	}
+	if m.PlayerFireVulnerability > 0 {
+		effects = append(effects, fmt.Sprintf("+%d%% vulnerabilidade fogo", m.PlayerFireVulnerability))
+	}
+	if m.PlayerSpeedPenaltyPct > 0 {
+		effects = append(effects, fmt.Sprintf("-%d%% velocidade", m.PlayerSpeedPenaltyPct))
+	}
+	if m.PlayerIceDefensePct > 0 {
+		effects = append(effects, fmt.Sprintf("+%d%% defesa gelo", m.PlayerIceDefensePct))
+	}
+	if m.FreezeChancePct > 0 {
+		effects = append(effects, fmt.Sprintf("%d%% chance congelamento", m.FreezeChancePct))
+	}
+	if m.EnemyAttackBonusPct > 0 {
+		effects = append(effects, fmt.Sprintf("+%d%% ATK inimigo", m.EnemyAttackBonusPct))
+	}
+	if m.PlayerFireDotPctMaxHP > 0 {
+		effects = append(effects, fmt.Sprintf("DOT fogo %d%% HP", m.PlayerFireDotPctMaxHP))
+	}
+	if m.HappinessPenaltyTick > 0 {
+		effects = append(effects, fmt.Sprintf("-%d felicidade/tick", m.HappinessPenaltyTick))
+	}
+	if m.EnemyLuckBonusPct > 0 {
+		effects = append(effects, fmt.Sprintf("+%d%% sorte inimiga", m.EnemyLuckBonusPct))
+	}
+	if m.RareLootChanceBonusPct > 0 {
+		effects = append(effects, fmt.Sprintf("+%d%% loot raro", m.RareLootChanceBonusPct))
+	}
+	if m.PlayerHPRegenPenaltyPct > 0 {
+		effects = append(effects, fmt.Sprintf("-%d%% regen HP", m.PlayerHPRegenPenaltyPct))
+	}
+
+	if len(effects) == 0 {
+		return "Sem efeitos especiais"
+	}
+	return strings.Join(effects, " | ")
 }

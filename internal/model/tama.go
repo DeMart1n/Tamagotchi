@@ -67,6 +67,7 @@ type Tama struct {
 	Inventory           json.RawMessage `json:"inventory,omitempty"`
 	TotalDungeonRuns    int             `json:"total_dungeon_runs"`
 	TotalBossesDefeated int             `json:"total_bosses_defeated"`
+	CurrentBiome        string          `json:"current_biome"`
 }
 
 // AddXP adiciona XP e faz level up se necessário. Retorna true se houve level up.

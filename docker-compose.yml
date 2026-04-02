@@ -12,6 +12,5 @@ services:
       - TAMAGO_CHILD=1
     working_dir: /app
     volumes:
-      - ./tamago_save.json:/app/tamago_save.json
       - ./DUNGEON.md:/app/DUNGEON.md:ro
     restart: unless-stopped

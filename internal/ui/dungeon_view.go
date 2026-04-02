@@ -60,6 +60,8 @@ func (m Model) renderDungeon(l layout) string {
 	var content string
 
 	switch d.Phase {
+	case dungeon.PhaseIntro:
+		content = m.renderDungeonIntro(l)
 	case dungeon.PhaseMenuPrincipal:
 		content = m.renderDungeonMenu(l)
 	case dungeon.PhaseInventario:
@@ -87,13 +89,29 @@ func (m Model) renderDungeon(l layout) string {
 	return styleDungeonBox.Width(l.dungeonWidth).Render(content)
 }
 
+// renderDungeonIntro mostra a arte de introdução do bioma
+func (m Model) renderDungeonIntro(l layout) string {
+	d := m.dungeonGame
+	introMsg := dungeon.GetBiomeIntroMessage(d.CurrentBiome)
+
+	var lines []string
+	lines = append(lines, introMsg)
+	lines = append(lines, "")
+	lines = append(lines, "  Aperte ENTER para continuar...")
+
+	return strings.Join(lines, "\n")
+}
+
 func (m Model) renderDungeonMenu(l layout) string {
 	title := styleDungeonTitle.Render("MASMORRA DE TAMAGO")
+	biome := m.dungeonGame.CurrentBiome
 
 	var lines []string
 	lines = append(lines, title)
 	lines = append(lines, "")
 	lines = append(lines, fmt.Sprintf("  %s (Lv.%d %s)", m.tama.Name, m.tama.Level, m.tama.Stage.String()))
+	lines = append(lines, fmt.Sprintf("  Bioma: %s", biome.String()))
+	lines = append(lines, fmt.Sprintf("  Atributos: %s", m.biomeAttributesSummary(biome)))
 	lines = append(lines, "")
 	lines = append(lines, "  [1] Entrar na Masmorra")
 	lines = append(lines, "  [2] Inventario")
@@ -358,7 +376,55 @@ func (m Model) renderFloorProgress() string {
 			parts = append(parts, "---")
 		}
 	}
-	return "  " + strings.Join(parts, "")
+	return fmt.Sprintf("  Bioma: %s\n  Atributos: %s\n  %s", d.CurrentBiome.String(), m.biomeAttributesSummary(d.CurrentBiome), strings.Join(parts, ""))
+}
+
+func (m Model) biomeAttributesSummary(biome dungeon.Biome) string {
+	modifier := dungeon.ModifierForBiome(biome)
+
+	var effects []string
+	if modifier.HungerRecoveryBonus > 0 {
+		effects = append(effects, fmt.Sprintf("+%d recuperacao fome", modifier.HungerRecoveryBonus))
+	}
+	if modifier.FriendlyEncounterChance > 0 {
+		effects = append(effects, fmt.Sprintf("+%d%% encontros amistosos", modifier.FriendlyEncounterChance))
+	}
+	if modifier.PlayerFireVulnerability > 0 {
+		effects = append(effects, fmt.Sprintf("+%d%% vulnerabilidade fogo", modifier.PlayerFireVulnerability))
+	}
+	if modifier.PlayerSpeedPenaltyPct > 0 {
+		effects = append(effects, fmt.Sprintf("-%d%% velocidade", modifier.PlayerSpeedPenaltyPct))
+	}
+	if modifier.PlayerIceDefensePct > 0 {
+		effects = append(effects, fmt.Sprintf("+%d%% defesa gelo", modifier.PlayerIceDefensePct))
+	}
+	if modifier.FreezeChancePct > 0 {
+		effects = append(effects, fmt.Sprintf("%d%% chance congelamento", modifier.FreezeChancePct))
+	}
+	if modifier.EnemyAttackBonusPct > 0 {
+		effects = append(effects, fmt.Sprintf("+%d%% ATK inimigo", modifier.EnemyAttackBonusPct))
+	}
+	if modifier.PlayerFireDotPctMaxHP > 0 {
+		effects = append(effects, fmt.Sprintf("DOT fogo %d%% HP", modifier.PlayerFireDotPctMaxHP))
+	}
+	if modifier.HappinessPenaltyTick > 0 {
+		effects = append(effects, fmt.Sprintf("-%d felicidade/tick", modifier.HappinessPenaltyTick))
+	}
+	if modifier.EnemyLuckBonusPct > 0 {
+		effects = append(effects, fmt.Sprintf("+%d%% sorte inimiga", modifier.EnemyLuckBonusPct))
+	}
+	if modifier.RareLootChanceBonusPct > 0 {
+		effects = append(effects, fmt.Sprintf("+%d%% loot raro", modifier.RareLootChanceBonusPct))
+	}
+	if modifier.PlayerHPRegenPenaltyPct > 0 {
+		effects = append(effects, fmt.Sprintf("-%d%% regen HP", modifier.PlayerHPRegenPenaltyPct))
+	}
+
+	if len(effects) == 0 {
+		return "Sem efeitos especiais"
+	}
+
+	return strings.Join(effects, " | ")
 }
 
 func (m Model) renderRoomProgress() string {

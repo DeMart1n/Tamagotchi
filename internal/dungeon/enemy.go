@@ -16,6 +16,7 @@ type EnemyTemplate struct {
 	GoldMin int
 	GoldMax int
 	IsBoss  bool
+	IsFire  bool
 }
 
 // Enemy é uma instância de inimigo em combate.
@@ -30,6 +31,7 @@ type Enemy struct {
 	GoldDrop   int
 	IsBoss     bool
 	Defending  bool
+	IsFire     bool
 }
 
 // levelScale retorna o multiplicador de escala baseado no level do jogador.
@@ -72,6 +74,7 @@ func SpawnEnemy(t EnemyTemplate, playerLevel int) *Enemy {
 		XPDrop:     xp,
 		GoldDrop:   gold,
 		IsBoss:     t.IsBoss,
+		IsFire:     t.IsFire,
 	}
 }
 
@@ -91,19 +94,20 @@ var FloorEnemyPools = map[int][]EnemyTemplate{
 	},
 	4: {
 		{ID: "cavaleiro_negro", Name: "Cavaleiro Negro", HPMin: 60, HPMax: 75, ATKMin: 22, ATKMax: 26, DEF: 14, VEL: 5, XPDrop: 70, GoldMin: 25, GoldMax: 40},
-		{ID: "mago_sombrio", Name: "Mago Sombrio", HPMin: 50, HPMax: 65, ATKMin: 25, ATKMax: 28, DEF: 8, VEL: 7, XPDrop: 75, GoldMin: 30, GoldMax: 45},
+		{ID: "mago_sombrio", Name: "Mago Sombrio", HPMin: 50, HPMax: 65, ATKMin: 25, ATKMax: 28, DEF: 8, VEL: 7, XPDrop: 75, GoldMin: 30, GoldMax: 45, IsFire: true},
 	},
 	5: {
-		{ID: "dragao_anciao", Name: "Dragao Anciao", HPMin: 200, HPMax: 200, ATKMin: 35, ATKMax: 35, DEF: 18, VEL: 8, XPDrop: 200, GoldMin: 100, GoldMax: 150, IsBoss: true},
+		{ID: "dragao_anciao", Name: "Dragao Anciao", HPMin: 200, HPMax: 200, ATKMin: 35, ATKMax: 35, DEF: 18, VEL: 8, XPDrop: 200, GoldMin: 100, GoldMax: 150, IsBoss: true, IsFire: true},
 	},
 }
 
 // RandomEnemyForFloor sorteia um inimigo do pool de um andar, escalado pelo level.
-func RandomEnemyForFloor(floor, playerLevel int) *Enemy {
+func RandomEnemyForFloor(floor, playerLevel int, biome Biome) *Enemy {
 	pool, ok := FloorEnemyPools[floor]
 	if !ok {
 		pool = FloorEnemyPools[1]
 	}
+	_ = biome
 	template := pool[rand.Intn(len(pool))]
 	return SpawnEnemy(template, playerLevel)
 }

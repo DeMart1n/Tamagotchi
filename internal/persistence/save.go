@@ -44,6 +44,7 @@ func Load() (*model.Tama, error) {
 
 	// Garantir que o Tama não esteja dormindo ao carregar
 	tama.Sleeping = false
+	normalizeBiome(&tama)
 
 	return &tama, nil
 }
@@ -78,5 +79,14 @@ func applyOfflineTick(tama *model.Tama) {
 	}
 	if tama.Happiness <= 0 {
 		tama.Depressed = true
+	}
+}
+
+func normalizeBiome(tama *model.Tama) {
+	switch tama.CurrentBiome {
+	case "Florestal", "Gelido", "Vulcanico", "Abissal":
+		return
+	default:
+		tama.CurrentBiome = "Florestal"
 	}
 }
