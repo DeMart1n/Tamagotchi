@@ -103,13 +103,45 @@ var FloorEnemyPools = map[int][]EnemyTemplate{
 
 // RandomEnemyForFloor sorteia um inimigo do pool de um andar, escalado pelo level.
 func RandomEnemyForFloor(floor, playerLevel int, biome Biome) *Enemy {
-	pool, ok := FloorEnemyPools[floor]
+	floorPool, ok := FloorEnemyPools[floor]
 	if !ok {
-		pool = FloorEnemyPools[1]
+		floorPool = FloorEnemyPools[1]
 	}
-	_ = biome
-	template := pool[rand.Intn(len(pool))]
+
+	biomePool := BiomeEnemyPools[biome]
+
+	// 40% de chance de um inimigo do bioma, se disponível.
+	if rand.Intn(100) < 40 && len(biomePool) > 0 {
+		template := biomePool[rand.Intn(len(biomePool))]
+		return SpawnEnemy(template, playerLevel)
+	}
+
+	template := floorPool[rand.Intn(len(floorPool))]
 	return SpawnEnemy(template, playerLevel)
+}
+
+// BiomeEnemyPools mapeia biomas para seus inimigos temáticos.
+var BiomeEnemyPools = map[Biome][]EnemyTemplate{
+	BiomeForest: {
+		{ID: "ent_jovem", Name: "Ent Jovem", HPMin: 35, HPMax: 45, ATKMin: 8, ATKMax: 10, DEF: 6, VEL: 2, XPDrop: 25, GoldMin: 8, GoldMax: 15},
+		{ID: "lobo_florestal", Name: "Lobo Florestal", HPMin: 25, HPMax: 30, ATKMin: 12, ATKMax: 15, DEF: 3, VEL: 8, XPDrop: 22, GoldMin: 10, GoldMax: 12},
+		{ID: "vespa_gigante", Name: "Vespa Gigante", HPMin: 20, HPMax: 25, ATKMin: 10, ATKMax: 12, DEF: 1, VEL: 10, XPDrop: 20, GoldMin: 6, GoldMax: 12},
+	},
+	BiomeIcy: {
+		{ID: "yeti_pequeno", Name: "Yeti Pequeno", HPMin: 50, HPMax: 60, ATKMin: 15, ATKMax: 18, DEF: 10, VEL: 3, XPDrop: 40, GoldMin: 15, GoldMax: 20},
+		{ID: "elementar_gelo", Name: "Elementar de Gelo", HPMin: 40, HPMax: 50, ATKMin: 14, ATKMax: 16, DEF: 12, VEL: 4, XPDrop: 38, GoldMin: 12, GoldMax: 18},
+		{ID: "lobo_neves", Name: "Lobo das Neves", HPMin: 30, HPMax: 35, ATKMin: 16, ATKMax: 20, DEF: 4, VEL: 9, XPDrop: 35, GoldMin: 10, GoldMax: 15},
+	},
+	BiomeVolcanic: {
+		{ID: "salamandra_fogo", Name: "Salamandra de Fogo", HPMin: 35, HPMax: 45, ATKMin: 18, ATKMax: 22, DEF: 5, VEL: 6, XPDrop: 45, GoldMin: 20, GoldMax: 30, IsFire: true},
+		{ID: "golem_magma", Name: "Golem de Magma", HPMin: 80, HPMax: 100, ATKMin: 20, ATKMax: 25, DEF: 15, VEL: 2, XPDrop: 60, GoldMin: 25, GoldMax: 40, IsFire: true},
+		{ID: "diabrete", Name: "Diabrete", HPMin: 40, HPMax: 50, ATKMin: 22, ATKMax: 26, DEF: 6, VEL: 8, XPDrop: 55, GoldMin: 30, GoldMax: 45, IsFire: true},
+	},
+	BiomeAbyssal: {
+		{ID: "olho_flutuante", Name: "Olho Flutuante", HPMin: 30, HPMax: 40, ATKMin: 20, ATKMax: 25, DEF: 4, VEL: 7, XPDrop: 50, GoldMin: 30, GoldMax: 50},
+		{ID: "sombra_faminta", Name: "Sombra Faminta", HPMin: 45, HPMax: 55, ATKMin: 22, ATKMax: 28, DEF: 8, VEL: 9, XPDrop: 55, GoldMin: 35, GoldMax: 55},
+		{ID: "horror_sem_rosto", Name: "Horror Sem Rosto", HPMin: 100, HPMax: 120, ATKMin: 25, ATKMax: 30, DEF: 18, VEL: 5, XPDrop: 100, GoldMin: 50, GoldMax: 100},
+	},
 }
 
 // BossForFloor5 retorna o boss do andar 5, escalado pelo level.

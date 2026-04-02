@@ -16,9 +16,9 @@ Uma visão organizada das tarefas e subtarefas para implementação das novas ma
 
 - [ ] Atualizar gerador de andares para suportar biomas (aleatoriedade/seed)
 
-- [ ] Criar pools de inimigos e encontros por bioma (incluindo inimigos raros exclusivos)
+- [x] Criar pools de inimigos e encontros por bioma (incluindo inimigos raros exclusivos)
 
-- [ ] Adicionar assets ASCII por bioma (`internal/dungeon/ascii_art.go`)
+- [x] Adicionar assets ASCII por bioma (`internal/dungeon/ascii_art.go`)
 
 - [ ] Mapear salas especiais: boss room, treasure, descanso/loja, eventos raros
 

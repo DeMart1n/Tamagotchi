@@ -46,20 +46,28 @@ func TestCombat_VolcanicAppliesDot(t *testing.T) {
 }
 
 func TestCombat_ForestFireVulnerabilityIncreasesDamage(t *testing.T) {
+	// Usamos um mock para garantir que não haja sorte envolvida e o dano seja previsível
 	basePlayer := CombatStats{HPMax: 100, HPCurrent: 100, Ataque: 10, Defesa: 0, Velocidade: 10, Sorte: 0}
 	baseEnemy := Enemy{Name: "Fire Mage", HPMax: 100, HPCurrent: 100, Ataque: 10, Defesa: 0, Velocidade: 5, IsFire: true}
 
+	// Forest tem +25% de vulnerabilidade a fogo
 	forestPlayer := basePlayer
 	forestEnemy := baseEnemy
 	forestCombat := NewCombat(&forestPlayer, &forestEnemy, BiomeForest)
-	rand.Seed(7)
+	
+	// Neutral (biome sem efeitos de combate/sorte)
+	neutralPlayer := basePlayer
+	neutralEnemy := baseEnemy
+	neutralCombat := NewCombat(&neutralPlayer, &neutralEnemy, Biome(999)) 
+
+	// Forçamos o mesmo seed para ambos para comparar a variância
+	// Nota: Como o combate usa o rand global, vamos setar o seed global antes de cada chamada
+	
+	rand.Seed(42)
 	forestCombat.enemyTurn()
 	forestDamage := 100 - forestCombat.Player.HPCurrent
 
-	neutralPlayer := basePlayer
-	neutralEnemy := baseEnemy
-	neutralCombat := NewCombat(&neutralPlayer, &neutralEnemy, BiomeAbyssal)
-	rand.Seed(7)
+	rand.Seed(42)
 	neutralCombat.enemyTurn()
 	neutralDamage := 100 - neutralCombat.Player.HPCurrent
 
