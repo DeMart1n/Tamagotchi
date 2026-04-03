@@ -43,8 +43,10 @@ type DungeonRun struct {
 	PendingLoot  *Equipment // Equipamento encontrado esperando aceitar/recusar
 
 	// Estado do submenu de itens no combate
-	ChoosingItem bool
-	ItemCursor   int
+	ChoosingItem  bool
+	ChoosingSkill bool
+	ItemCursor    int
+	SkillCursor   int
 
 	// Estado da loja de descanso
 	ShopCursor int
@@ -54,6 +56,12 @@ type DungeonRun struct {
 func NewDungeonRun(tama *model.Tama, inv *Inventory) *DungeonRun {
 	stats := DeriveCombatStats(tama).ApplyEquipment(inv)
 	biome := RandomBiome()
+
+	// Garantir que o Pet tenha habilidades se for um save antigo
+	if len(tama.SkillsKnown) == 0 {
+		tama.SkillsKnown = model.GetInitialSkills(tama.Stage)
+	}
+
 	return &DungeonRun{
 		Phase:        PhaseIntro,
 		Tama:         tama,
@@ -183,6 +191,10 @@ func (d *DungeonRun) handleCombate(input string) {
 		d.handleItemChoice(input)
 		return
 	}
+	if d.ChoosingSkill {
+		d.handleSkillChoice(input)
+		return
+	}
 
 	if d.Combat == nil || d.Combat.IsOver() {
 		return
@@ -190,10 +202,19 @@ func (d *DungeonRun) handleCombate(input string) {
 
 	switch input {
 	case "1": // Atacar
-		d.Combat.ExecuteAction(ActionAtacar, nil, 0)
+		d.Combat.ExecuteAction(ActionAtacar, nil, nil, 0)
 	case "2": // Defender
-		d.Combat.ExecuteAction(ActionDefender, nil, 0)
-	case "3": // Item
+		d.Combat.ExecuteAction(ActionDefender, nil, nil, 0)
+	case "3": // Habilidades
+		if len(d.Tama.SkillsKnown) == 0 {
+			d.Message = "Voce nao tem habilidades!"
+			return
+		}
+		d.ChoosingSkill = true
+		d.SkillCursor = 0
+		d.Message = "Escolha uma habilidade (numero) ou 0 para voltar:"
+		return
+	case "4": // Item
 		if d.ItemBag.Count() == 0 {
 			d.Message = "Voce nao tem itens!"
 			return
@@ -202,12 +223,38 @@ func (d *DungeonRun) handleCombate(input string) {
 		d.ItemCursor = 0
 		d.Message = "Escolha um item (numero) ou 0 para voltar:"
 		return
-	case "4": // Fugir
-		d.Combat.ExecuteAction(ActionFugir, nil, 0)
+	case "5": // Fugir
+		d.Combat.ExecuteAction(ActionFugir, nil, nil, 0)
 	default:
 		return
 	}
 
+	d.updateCombatMessage()
+
+	if d.Combat.IsOver() {
+		d.Phase = PhaseCombatResult
+	}
+}
+
+func (d *DungeonRun) handleSkillChoice(input string) {
+	if input == "0" {
+		d.ChoosingSkill = false
+		d.Message = "Escolha uma acao:"
+		return
+	}
+
+	idx := -1
+	if len(input) == 1 && input[0] >= '1' && input[0] <= '9' {
+		idx = int(input[0] - '1')
+	}
+
+	if idx < 0 || idx >= len(d.Tama.SkillsKnown) {
+		d.Message = "Habilidade invalida!"
+		return
+	}
+
+	d.ChoosingSkill = false
+	d.Combat.ExecuteAction(ActionSkill, nil, d.Tama, idx)
 	d.updateCombatMessage()
 
 	if d.Combat.IsOver() {
@@ -233,7 +280,7 @@ func (d *DungeonRun) handleItemChoice(input string) {
 	}
 
 	d.ChoosingItem = false
-	d.Combat.ExecuteAction(ActionItem, d.ItemBag, idx)
+	d.Combat.ExecuteAction(ActionItem, d.ItemBag, d.Tama, idx)
 	d.updateCombatMessage()
 
 	if d.Combat.IsOver() {

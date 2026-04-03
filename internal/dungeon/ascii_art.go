@@ -128,6 +128,30 @@ func HPBar(current, max, width int) string {
 	return bar
 }
 
+// MPBar gera uma barra de MP visual para o combate.
+func MPBar(current, max, width int) string {
+	if max <= 0 {
+		max = 1
+	}
+	pct := float64(current) / float64(max)
+	if pct < 0 {
+		pct = 0
+	}
+	if pct > 1 {
+		pct = 1
+	}
+	filled := int(pct * float64(width))
+	bar := ""
+	for i := 0; i < width; i++ {
+		if i < filled {
+			bar += "▣"
+		} else {
+			bar += "▢"
+		}
+	}
+	return bar
+}
+
 // BiomeArt retorna a ASCII art de introdução para um bioma
 func BiomeArt(biome Biome) string {
 	switch biome {

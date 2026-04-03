@@ -68,6 +68,11 @@ type Tama struct {
 	TotalDungeonRuns    int             `json:"total_dungeon_runs"`
 	TotalBossesDefeated int             `json:"total_bosses_defeated"`
 	CurrentBiome        string          `json:"current_biome"`
+
+	// Habilidades
+	MP          int      `json:"mp"`
+	MPMax       int      `json:"mp_max"`
+	SkillsKnown []string `json:"skills_known"`
 }
 
 // AddXP adiciona XP e faz level up se necessário. Retorna true se houve level up.

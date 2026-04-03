@@ -44,11 +44,13 @@ func (r RoomType) Icon() string {
 
 // Room é uma sala individual dentro de um andar.
 type Room struct {
-	Type     RoomType
-	Cleared  bool
-	Enemy    *Enemy     // Para salas de combate/boss
-	Loot     *Equipment // Para salas de tesouro
-	LootGold int        // Ouro em salas de tesouro
+	Type        RoomType
+	Name        string // Nome temático (ex: "Acampamento de Druidas")
+	Description string // Descrição breve
+	Cleared     bool
+	Enemy       *Enemy     // Para salas de combate/boss
+	Loot        *Equipment // Para salas de tesouro
+	LootGold    int        // Ouro em salas de tesouro
 }
 
 // Floor é um andar completo da dungeon.
@@ -60,33 +62,14 @@ type Floor struct {
 }
 
 // GenerateFloor gera as salas de um andar, com inimigos escalados pelo level do jogador.
-// Andares 1-4: combate → combate → descanso/tesouro(40%) → combate
-// Andar 5: combate → descanso → combate → BOSS
 func GenerateFloor(floorNum, playerLevel int, biome Biome) *Floor {
 	var rooms []Room
 
+	// Layout por bioma (Andar 5 é sempre BOSS no final)
 	if floorNum == 5 {
-		rooms = []Room{
-			{Type: RoomCombat, Enemy: RandomEnemyForFloor(4, playerLevel, biome)},
-			{Type: RoomRest},
-			{Type: RoomCombat, Enemy: RandomEnemyForFloor(4, playerLevel, biome)},
-			{Type: RoomBoss, Enemy: BossForFloor5(playerLevel)},
-		}
+		rooms = generateBossFloor(playerLevel, biome)
 	} else {
-		// Sala 1: combate
-		rooms = append(rooms, Room{Type: RoomCombat, Enemy: RandomEnemyForFloor(floorNum, playerLevel, biome)})
-		// Sala 2: combate
-		rooms = append(rooms, Room{Type: RoomCombat, Enemy: RandomEnemyForFloor(floorNum, playerLevel, biome)})
-		// Sala 3: descanso ou tesouro (40% tesouro)
-		if rand.Intn(100) < 40 {
-			loot := randomLootForFloor(floorNum, biome)
-			goldDrop := 10 + rand.Intn(floorNum*10)
-			rooms = append(rooms, Room{Type: RoomTreasure, Loot: loot, LootGold: goldDrop})
-		} else {
-			rooms = append(rooms, Room{Type: RoomRest})
-		}
-		// Sala 4: combate
-		rooms = append(rooms, Room{Type: RoomCombat, Enemy: RandomEnemyForFloor(floorNum, playerLevel, biome)})
+		rooms = generateStandardFloor(floorNum, playerLevel, biome)
 	}
 
 	return &Floor{
@@ -94,6 +77,113 @@ func GenerateFloor(floorNum, playerLevel int, biome Biome) *Floor {
 		Biome:       biome,
 		Rooms:       rooms,
 		CurrentRoom: 0,
+	}
+}
+
+func generateBossFloor(playerLevel int, biome Biome) []Room {
+	var rooms []Room
+	restRoom := Room{Type: RoomRest}
+	
+	switch biome {
+	case BiomeForest:
+		restRoom.Name = "Clareira de Descanso"
+	case BiomeIcy:
+		restRoom.Name = "Caverna Termal"
+	case BiomeVolcanic:
+		restRoom.Name = "Forja de Obsidiana"
+	case BiomeAbyssal:
+		restRoom.Name = "Santuário Esquecido"
+	}
+
+	rooms = []Room{
+		{Type: RoomCombat, Enemy: RandomEnemyForFloor(4, playerLevel, biome)},
+		restRoom,
+		{Type: RoomCombat, Enemy: RandomEnemyForFloor(4, playerLevel, biome)},
+		{Type: RoomBoss, Enemy: BossForFloor5(playerLevel)},
+	}
+	return rooms
+}
+
+func generateStandardFloor(floorNum, playerLevel int, biome Biome) []Room {
+	var rooms []Room
+
+	switch biome {
+	case BiomeForest:
+		// Layout Floresta: 4 salas equilibradas
+		rooms = append(rooms, Room{Type: RoomCombat, Enemy: RandomEnemyForFloor(floorNum, playerLevel, biome)})
+		rooms = append(rooms, Room{Type: RoomCombat, Enemy: RandomEnemyForFloor(floorNum, playerLevel, biome)})
+		if rand.Intn(100) < 40 {
+			rooms = append(rooms, createTreasureRoom(floorNum, biome))
+		} else {
+			rooms = append(rooms, createRestRoom(biome))
+		}
+		rooms = append(rooms, Room{Type: RoomCombat, Enemy: RandomEnemyForFloor(floorNum, playerLevel, biome)})
+
+	case BiomeIcy:
+		// Layout Gélido: 5 salas, mais sobrevivência
+		rooms = append(rooms, Room{Type: RoomCombat, Enemy: RandomEnemyForFloor(floorNum, playerLevel, biome)})
+		rooms = append(rooms, createRestRoom(biome))
+		rooms = append(rooms, Room{Type: RoomCombat, Enemy: RandomEnemyForFloor(floorNum, playerLevel, biome)})
+		rooms = append(rooms, createRestRoom(biome))
+		rooms = append(rooms, Room{Type: RoomCombat, Enemy: RandomEnemyForFloor(floorNum, playerLevel, biome)})
+
+	case BiomeVolcanic:
+		// Layout Vulcânico: 4 salas, intenso
+		rooms = append(rooms, Room{Type: RoomCombat, Enemy: RandomEnemyForFloor(floorNum, playerLevel, biome)})
+		rooms = append(rooms, Room{Type: RoomCombat, Enemy: RandomEnemyForFloor(floorNum, playerLevel, biome)})
+		// Sala de "Perigo" (Combate mais difícil)
+		dangerEnemy := RandomEnemyForFloor(floorNum+1, playerLevel, biome)
+		rooms = append(rooms, Room{Type: RoomCombat, Enemy: dangerEnemy, Name: "ZONA CRITICA", Description: "O calor é insuportável!"})
+		rooms = append(rooms, Room{Type: RoomCombat, Enemy: RandomEnemyForFloor(floorNum, playerLevel, biome)})
+
+	case BiomeAbyssal:
+		// Layout Abissal: 6 salas, ganancioso
+		rooms = append(rooms, Room{Type: RoomCombat, Enemy: RandomEnemyForFloor(floorNum, playerLevel, biome)})
+		rooms = append(rooms, createTreasureRoom(floorNum, biome))
+		rooms = append(rooms, Room{Type: RoomCombat, Enemy: RandomEnemyForFloor(floorNum, playerLevel, biome)})
+		rooms = append(rooms, createTreasureRoom(floorNum, biome))
+		rooms = append(rooms, Room{Type: RoomCombat, Enemy: RandomEnemyForFloor(floorNum, playerLevel, biome)})
+		rooms = append(rooms, createRestRoom(biome))
+
+	default:
+		// Fallback para o antigo (4 salas)
+		rooms = []Room{
+			{Type: RoomCombat, Enemy: RandomEnemyForFloor(floorNum, playerLevel, biome)},
+			{Type: RoomCombat, Enemy: RandomEnemyForFloor(floorNum, playerLevel, biome)},
+			createRestRoom(biome),
+			{Type: RoomCombat, Enemy: RandomEnemyForFloor(floorNum, playerLevel, biome)},
+		}
+	}
+	return rooms
+}
+
+func createRestRoom(biome Biome) Room {
+	r := Room{Type: RoomRest}
+	switch biome {
+	case BiomeForest:
+		r.Name = "Acampamento de Druidas"
+		r.Description = "Um local de paz e cura."
+	case BiomeIcy:
+		r.Name = "Fonte Termal Oculta"
+		r.Description = "Aqueça seu corpo e recupere as forças."
+	case BiomeVolcanic:
+		r.Name = "Forja de Obsidiana"
+		r.Description = "Equipamentos podem ser resfriados aqui."
+	case BiomeAbyssal:
+		r.Name = "Santuário Esquecido"
+		r.Description = "Energias ancestrais fluem nas paredes."
+	}
+	return r
+}
+
+func createTreasureRoom(floorNum int, biome Biome) Room {
+	loot := randomLootForFloor(floorNum, biome)
+	goldDrop := 10 + rand.Intn(floorNum*10)
+	return Room{
+		Type:     RoomTreasure,
+		Loot:     loot,
+		LootGold: goldDrop,
+		Name:     "Tesouro Perdido",
 	}
 }
 
