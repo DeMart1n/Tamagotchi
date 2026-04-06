@@ -1,6 +1,7 @@
 package dungeon
 
 import (
+	"Pessoal/internal/model"
 	"fmt"
 	"math/rand"
 )
@@ -12,6 +13,7 @@ const (
 	ActionAtacar CombatAction = iota
 	ActionDefender
 	ActionItem
+	ActionSkill
 	ActionFugir
 )
 
@@ -60,7 +62,7 @@ func (c *Combat) IsOver() bool {
 }
 
 // ExecuteAction processa a ação do jogador e a resposta do inimigo.
-func (c *Combat) ExecuteAction(action CombatAction, itemBag *ItemBag, itemIndex int) {
+func (c *Combat) ExecuteAction(action CombatAction, itemBag *ItemBag, tama *model.Tama, actionIndex int) {
 	c.Log = []string{}
 	c.Defending = false
 	c.applyBiomeTurnEffects()
@@ -94,7 +96,9 @@ func (c *Combat) ExecuteAction(action CombatAction, itemBag *ItemBag, itemIndex 
 		c.Defending = true
 		c.Log = append(c.Log, "Voce se preparou para defender!")
 	case ActionItem:
-		c.useItem(itemBag, itemIndex)
+		c.useItem(itemBag, actionIndex)
+	case ActionSkill:
+		c.executeSkill(tama, actionIndex)
 	case ActionFugir:
 		c.tryFlee()
 	}
@@ -282,5 +286,57 @@ func (c *Combat) tryFlee() {
 		c.Log = append(c.Log, "Voce fugiu com sucesso!")
 	} else {
 		c.Log = append(c.Log, "Nao conseguiu fugir!")
+	}
+}
+
+func (c *Combat) executeSkill(tama *model.Tama, skillIndex int) {
+	if tama == nil || skillIndex < 0 || skillIndex >= len(tama.SkillsKnown) {
+		c.Log = append(c.Log, "Habilidade invalida!")
+		return
+	}
+
+	skillID := tama.SkillsKnown[skillIndex]
+	skill, ok := model.AllSkills[skillID]
+	if !ok {
+		c.Log = append(c.Log, "Habilidade desconhecida!")
+		return
+	}
+
+	if c.Player.MPCurrent < skill.Cost {
+		c.Log = append(c.Log, "MP insuficiente!")
+		return
+	}
+
+	c.Player.MPCurrent -= skill.Cost
+	c.Log = append(c.Log, fmt.Sprintf("Usou %s!", skill.Name))
+
+	switch skill.Type {
+	case model.SkillDamage:
+		dmg := int(float64(c.Player.Ataque) * (float64(skill.Power) / 100.0))
+		dmg -= c.Enemy.Defesa / 2
+		if dmg < 1 {
+			dmg = 1
+		}
+		c.Enemy.HPCurrent -= dmg
+		c.Log = append(c.Log, fmt.Sprintf("Causou %d de dano em %s!", dmg, c.Enemy.Name))
+
+	case model.SkillHeal:
+		heal := (c.Player.HPMax * skill.Power) / 100
+		c.Player.HPCurrent += heal
+		if c.Player.HPCurrent > c.Player.HPMax {
+			c.Player.HPCurrent = c.Player.HPMax
+		}
+		c.Log = append(c.Log, fmt.Sprintf("Recuperou %d de HP!", heal))
+
+	case model.SkillBuff:
+		buff := (c.Player.Ataque * skill.Power) / 100
+		c.Player.Ataque += buff
+		c.ATKBuff += buff
+		c.Log = append(c.Log, "Ataque aumentado temporariamente!")
+
+	case model.SkillDebuff:
+		debuff := (c.Enemy.Defesa * skill.Power) / 100
+		c.Enemy.Defesa -= debuff
+		c.Log = append(c.Log, fmt.Sprintf("Defesa de %s reduzida!", c.Enemy.Name))
 	}
 }

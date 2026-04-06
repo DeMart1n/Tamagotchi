@@ -6,6 +6,8 @@ import "Pessoal/internal/model"
 type CombatStats struct {
 	HPMax      int
 	HPCurrent  int
+	MPMax      int
+	MPCurrent  int
 	Ataque     int
 	Defesa     int
 	Velocidade int
@@ -35,6 +37,7 @@ func DeriveCombatStats(tama *model.Tama) CombatStats {
 	mult := stageMult(tama.Stage)
 
 	hp := int(float64(50+tama.Level*10) * mult)
+	mp := int(float64(20+tama.Level*5) * mult)
 	atk := int(float64(8+tama.Level*3) * mult)
 	def := int(float64(3+tama.Level*2) * mult)
 	vel := 5 + tama.Level
@@ -52,6 +55,8 @@ func DeriveCombatStats(tama *model.Tama) CombatStats {
 	return CombatStats{
 		HPMax:      hp,
 		HPCurrent:  hp,
+		MPMax:      mp,
+		MPCurrent:  mp,
 		Ataque:     atk,
 		Defesa:     def,
 		Velocidade: vel,

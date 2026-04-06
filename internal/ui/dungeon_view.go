@@ -10,14 +10,11 @@ import (
 
 // --- Estilos da Dungeon ---
 var (
-	styleDungeonBox = lipgloss.NewStyle().
-			Border(lipgloss.DoubleBorder()).
-			BorderForeground(lipgloss.Color("#FFD700")).
-			Padding(0, 1)
+	styleDungeonBase = lipgloss.NewStyle().
+				Border(lipgloss.DoubleBorder()).
+				Padding(0, 1)
 
-	styleDungeonTitle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#FFD700")).
-				Bold(true)
+	styleDungeonTitleBase = lipgloss.NewStyle().Bold(true)
 
 	styleEnemyName = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FF5F87")).
@@ -31,11 +28,36 @@ var (
 			Foreground(lipgloss.Color("#F7B538")).
 			Italic(true)
 
+	styleMana = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#00d2ff")).
+			Bold(true)
+
 	styleRarityComum    = lipgloss.NewStyle().Foreground(lipgloss.Color("#AAAAAA"))
 	styleRarityIncomum  = lipgloss.NewStyle().Foreground(lipgloss.Color("#43BF6D"))
 	styleRarityRaro     = lipgloss.NewStyle().Foreground(lipgloss.Color("#5B9FFF"))
 	styleRarityLendario = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFD700")).Bold(true)
 )
+
+func getBiomeStyle(biome dungeon.Biome) (lipgloss.Style, lipgloss.Style) {
+	var color string
+	switch biome {
+	case dungeon.BiomeForest:
+		color = "#2ecc71" // Verde Esmeralda
+	case dungeon.BiomeIcy:
+		color = "#00d2ff" // Azul Glacial
+	case dungeon.BiomeVolcanic:
+		color = "#e74c3c" // Vermelho Lava
+	case dungeon.BiomeAbyssal:
+		color = "#8e44ad" // Roxo Profundo
+	default:
+		color = "#FFD700" // Ouro padrão
+	}
+
+	borderStyle := styleDungeonBase.Copy().BorderForeground(lipgloss.Color(color))
+	titleStyle := styleDungeonTitleBase.Copy().Foreground(lipgloss.Color(color))
+
+	return borderStyle, titleStyle
+}
 
 func rarityStyle(r dungeon.Rarity) lipgloss.Style {
 	switch r {
@@ -58,35 +80,36 @@ func (m Model) renderDungeon(l layout) string {
 	}
 
 	var content string
+	borderStyle, titleStyle := getBiomeStyle(d.CurrentBiome)
 
 	switch d.Phase {
 	case dungeon.PhaseIntro:
 		content = m.renderDungeonIntro(l)
 	case dungeon.PhaseMenuPrincipal:
-		content = m.renderDungeonMenu(l)
+		content = m.renderDungeonMenu(l, titleStyle)
 	case dungeon.PhaseInventario:
-		content = m.renderDungeonInventory(l)
+		content = m.renderDungeonInventory(l, titleStyle)
 	case dungeon.PhaseCombate:
-		content = m.renderDungeonCombat(l)
+		content = m.renderDungeonCombat(l, titleStyle)
 	case dungeon.PhaseCombatResult:
-		content = m.renderDungeonCombat(l)
+		content = m.renderDungeonCombat(l, titleStyle)
 	case dungeon.PhaseDescanso:
-		content = m.renderDungeonRest(l)
+		content = m.renderDungeonRest(l, titleStyle)
 	case dungeon.PhaseDescansoLoja:
-		content = m.renderDungeonShop(l)
+		content = m.renderDungeonShop(l, titleStyle)
 	case dungeon.PhaseTesouro:
-		content = m.renderDungeonTreasure(l)
+		content = m.renderDungeonTreasure(l, titleStyle)
 	case dungeon.PhaseFimAndar:
-		content = m.renderDungeonFloorEnd(l)
+		content = m.renderDungeonFloorEnd(l, titleStyle)
 	case dungeon.PhaseVitoria:
-		content = m.renderDungeonVictory(l)
+		content = m.renderDungeonVictory(l, titleStyle)
 	case dungeon.PhaseDerrota:
 		content = m.renderDungeonDefeat(l)
 	default:
 		content = d.Message
 	}
 
-	return styleDungeonBox.Width(l.dungeonWidth).Render(content)
+	return borderStyle.Width(l.dungeonWidth).Render(content)
 }
 
 // renderDungeonIntro mostra a arte de introdução do bioma
@@ -102,8 +125,8 @@ func (m Model) renderDungeonIntro(l layout) string {
 	return strings.Join(lines, "\n")
 }
 
-func (m Model) renderDungeonMenu(l layout) string {
-	title := styleDungeonTitle.Render("MASMORRA DE TAMAGO")
+func (m Model) renderDungeonMenu(l layout, titleStyle lipgloss.Style) string {
+	title := titleStyle.Render("MASMORRA DE TAMAGO")
 	biome := m.dungeonGame.CurrentBiome
 
 	var lines []string
@@ -122,12 +145,12 @@ func (m Model) renderDungeonMenu(l layout) string {
 	return strings.Join(lines, "\n")
 }
 
-func (m Model) renderDungeonInventory(l layout) string {
+func (m Model) renderDungeonInventory(l layout, titleStyle lipgloss.Style) string {
 	d := m.dungeonGame
 	inv := d.Inv
 
 	var lines []string
-	lines = append(lines, styleDungeonTitle.Render("INVENTARIO"))
+	lines = append(lines, titleStyle.Render("INVENTARIO"))
 	lines = append(lines, "")
 	lines = append(lines, fmt.Sprintf("  Ouro: %d", inv.Gold))
 	lines = append(lines, "")
@@ -165,7 +188,7 @@ func (m Model) renderDungeonInventory(l layout) string {
 	return strings.Join(lines, "\n")
 }
 
-func (m Model) renderDungeonCombat(l layout) string {
+func (m Model) renderDungeonCombat(l layout, titleStyle lipgloss.Style) string {
 	d := m.dungeonGame
 	c := d.Combat
 	if c == nil {
@@ -177,7 +200,17 @@ func (m Model) renderDungeonCombat(l layout) string {
 	// Progresso do andar
 	lines = append(lines, m.renderFloorProgress())
 	lines = append(lines, m.renderRoomProgress())
+
+	// Nome da sala especial (ex: Zona Crítica)
+	room := d.Floor.CurrentRoomRef()
+	if room != nil && room.Name != "" {
+		lines = append(lines, titleStyle.Render("  "+room.Name))
+		if room.Description != "" {
+			lines = append(lines, styleCombatLog.Render("  "+room.Description))
+		}
+	}
 	lines = append(lines, "")
+
 
 	// Inimigo
 	lines = append(lines, styleEnemyName.Render("  "+c.Enemy.Name))
@@ -205,6 +238,10 @@ func (m Model) renderDungeonCombat(l layout) string {
 	lines = append(lines, stylePlayerInfo.Render(fmt.Sprintf("  %s (Voce)", m.tama.Name)))
 	playerBar := dungeon.HPBar(d.Stats.HPCurrent, d.Stats.HPMax, 16)
 	lines = append(lines, fmt.Sprintf("  HP %s %d/%d", playerBar, d.Stats.HPCurrent, d.Stats.HPMax))
+	
+	manaBar := dungeon.MPBar(d.Stats.MPCurrent, d.Stats.MPMax, 16)
+	lines = append(lines, styleMana.Render(fmt.Sprintf("  MP %s %d/%d", manaBar, d.Stats.MPCurrent, d.Stats.MPMax)))
+	
 	lines = append(lines, fmt.Sprintf("  ATK:%d  DEF:%d  VEL:%d", d.Stats.Ataque, d.Stats.Defesa, d.Stats.Velocidade))
 	lines = append(lines, "")
 
@@ -217,26 +254,42 @@ func (m Model) renderDungeonCombat(l layout) string {
 			lines = append(lines, fmt.Sprintf("    [%d] %s", i+1, item.Name))
 		}
 		lines = append(lines, "    [0] Voltar")
+	} else if d.ChoosingSkill {
+		lines = append(lines, "  Habilidades:")
+		for i, skillID := range m.tama.SkillsKnown {
+			skill := model.AllSkills[skillID]
+			lines = append(lines, fmt.Sprintf("    [%d] %-15s (%d MP)", i+1, skill.Name, skill.Cost))
+		}
+		lines = append(lines, "    [0] Voltar")
 	} else {
-		lines = append(lines, "  [1] Atacar   [2] Defender")
+		lines = append(lines, "  [1] Atacar   [2] Defender  [3] Habilidades")
 		items := ""
 		if d.ItemBag.Count() > 0 {
 			items = fmt.Sprintf("(%d)", d.ItemBag.Count())
 		}
-		lines = append(lines, fmt.Sprintf("  [3] Item %s  [4] Fugir", items))
+		lines = append(lines, fmt.Sprintf("  [4] Item %s  [5] Fugir", items))
 	}
 
 	return strings.Join(lines, "\n")
 }
 
-func (m Model) renderDungeonRest(l layout) string {
+func (m Model) renderDungeonRest(l layout, titleStyle lipgloss.Style) string {
 	d := m.dungeonGame
+	room := d.Floor.CurrentRoomRef()
+
+	title := "Sala de Descanso"
+	if room != nil && room.Name != "" {
+		title = room.Name
+	}
 
 	var lines []string
 	lines = append(lines, m.renderFloorProgress())
 	lines = append(lines, m.renderRoomProgress())
 	lines = append(lines, "")
-	lines = append(lines, styleDungeonTitle.Render("  Sala de Descanso"))
+	lines = append(lines, titleStyle.Render("  "+title))
+	if room != nil && room.Description != "" {
+		lines = append(lines, styleCombatLog.Render("  "+room.Description))
+	}
 	lines = append(lines, "")
 
 	playerBar := dungeon.HPBar(d.Stats.HPCurrent, d.Stats.HPMax, 16)
@@ -250,11 +303,11 @@ func (m Model) renderDungeonRest(l layout) string {
 	return strings.Join(lines, "\n")
 }
 
-func (m Model) renderDungeonShop(l layout) string {
+func (m Model) renderDungeonShop(l layout, titleStyle lipgloss.Style) string {
 	d := m.dungeonGame
 
 	var lines []string
-	lines = append(lines, styleDungeonTitle.Render("  Loja de Pocoes"))
+	lines = append(lines, titleStyle.Render("  Loja de Pocoes"))
 	lines = append(lines, "")
 	lines = append(lines, fmt.Sprintf("  Ouro: %d", d.Inv.Gold))
 	lines = append(lines, "")
@@ -280,14 +333,14 @@ func (m Model) renderDungeonShop(l layout) string {
 	return strings.Join(lines, "\n")
 }
 
-func (m Model) renderDungeonTreasure(l layout) string {
+func (m Model) renderDungeonTreasure(l layout, titleStyle lipgloss.Style) string {
 	d := m.dungeonGame
 
 	var lines []string
 	lines = append(lines, m.renderFloorProgress())
 	lines = append(lines, m.renderRoomProgress())
 	lines = append(lines, "")
-	lines = append(lines, styleDungeonTitle.Render("  Bau do Tesouro!"))
+	lines = append(lines, titleStyle.Render("  Bau do Tesouro!"))
 	lines = append(lines, "")
 	lines = append(lines, styleCombatLog.Render("  "+d.Message))
 
@@ -305,13 +358,13 @@ func (m Model) renderDungeonTreasure(l layout) string {
 	return strings.Join(lines, "\n")
 }
 
-func (m Model) renderDungeonFloorEnd(l layout) string {
+func (m Model) renderDungeonFloorEnd(l layout, titleStyle lipgloss.Style) string {
 	d := m.dungeonGame
 
 	var lines []string
 	lines = append(lines, m.renderFloorProgress())
 	lines = append(lines, "")
-	lines = append(lines, styleDungeonTitle.Render(fmt.Sprintf("  Andar %d Completo!", d.FloorNum)))
+	lines = append(lines, titleStyle.Render(fmt.Sprintf("  Andar %d Completo!", d.FloorNum)))
 	lines = append(lines, "")
 	lines = append(lines, fmt.Sprintf("  XP acumulado: %d", d.TotalXP))
 	lines = append(lines, fmt.Sprintf("  Ouro acumulado: %d", d.TotalGold))
@@ -324,12 +377,12 @@ func (m Model) renderDungeonFloorEnd(l layout) string {
 	return strings.Join(lines, "\n")
 }
 
-func (m Model) renderDungeonVictory(l layout) string {
+func (m Model) renderDungeonVictory(l layout, titleStyle lipgloss.Style) string {
 	d := m.dungeonGame
 
 	var lines []string
 	lines = append(lines, "")
-	lines = append(lines, styleDungeonTitle.Render("  VITORIA!"))
+	lines = append(lines, titleStyle.Render("  VITORIA!"))
 	lines = append(lines, "")
 	lines = append(lines, "  O Dragao Anciao foi derrotado!")
 	lines = append(lines, "")
