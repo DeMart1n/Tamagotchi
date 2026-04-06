@@ -42,10 +42,10 @@ func NewGuessGame() *GuessGame {
 func (g *GuessGame) TryGuess(input string) string {
 	num, err := strconv.Atoi(input)
 	if err != nil {
-		return "❓ Digite um número entre 1 e 100!"
+		return "[?] Digite um número entre 1 e 100!"
 	}
 	if num < 1 || num > 100 {
-		return "❓ O número deve ser entre 1 e 100!"
+		return "[?] O número deve ser entre 1 e 100!"
 	}
 
 	g.Attempts++
@@ -53,19 +53,19 @@ func (g *GuessGame) TryGuess(input string) string {
 	if num == g.Target {
 		g.Won = true
 		g.Done = true
-		return fmt.Sprintf("🎉 ACERTOU! O número era %d! (%d tentativas)", g.Target, g.Attempts)
+		return fmt.Sprintf("[*] ACERTOU! O número era %d! (%d tentativas)", g.Target, g.Attempts)
 	}
 
 	if g.Attempts >= g.MaxAttempt {
 		g.Done = true
-		return fmt.Sprintf("💔 Acabaram as tentativas! O número era %d.", g.Target)
+		return fmt.Sprintf("[X] Acabaram as tentativas! O número era %d.", g.Target)
 	}
 
 	remaining := g.MaxAttempt - g.Attempts
 	if num < g.Target {
-		g.Hint = "⬆️ Maior!"
+		g.Hint = "[^] Maior!"
 	} else {
-		g.Hint = "⬇️ Menor!"
+		g.Hint = "[v] Menor!"
 	}
 	return fmt.Sprintf("%s (Tentativa %d/%d, restam %d)", g.Hint, g.Attempts, g.MaxAttempt, remaining)
 }
@@ -73,11 +73,11 @@ func (g *GuessGame) TryGuess(input string) string {
 func (g *GuessGame) RenderView() string {
 	if g.Done {
 		if g.Won {
-			return "🎉 VOCÊ GANHOU! Digite qualquer coisa para voltar."
+			return "[*] VOCÊ GANHOU! Digite qualquer coisa para voltar."
 		}
-		return fmt.Sprintf("💔 PERDEU! O número era %d. Digite qualquer coisa para voltar.", g.Target)
+		return fmt.Sprintf("[X] PERDEU! O número era %d. Digite qualquer coisa para voltar.", g.Target)
 	}
-	header := "🔢 ADIVINHE O NÚMERO (1-100)"
+	header := "[#] ADIVINHE O NÚMERO (1-100)"
 	info := fmt.Sprintf("Tentativa %d/%d", g.Attempts, g.MaxAttempt)
 	hint := g.Hint
 	if hint == "" {
@@ -128,7 +128,7 @@ func (r *ReactGame) HandleGo() {
 func (r *ReactGame) HandlePress() string {
 	if r.Phase == ReactWaiting {
 		r.Done = true
-		r.Result = "⚡ Apertou cedo demais! -5 Felicidade."
+		r.Result = "[>>] Apertou cedo demais! -5 Felicidade."
 		return r.Result
 	}
 
@@ -138,11 +138,11 @@ func (r *ReactGame) HandlePress() string {
 	ms := elapsed.Milliseconds()
 	switch {
 	case ms < 500:
-		r.Result = fmt.Sprintf("⚡ INCRÍVEL! %dms — Reflexo de gato! +25 Felicidade, +15 XP", ms)
+		r.Result = fmt.Sprintf("[>>] INCRÍVEL! %dms — Reflexo de gato! +25 Felicidade, +15 XP", ms)
 	case ms < 1000:
-		r.Result = fmt.Sprintf("⚡ BOM! %dms — Nada mal! +10 Felicidade, +8 XP", ms)
+		r.Result = fmt.Sprintf("[>>] BOM! %dms — Nada mal! +10 Felicidade, +8 XP", ms)
 	default:
-		r.Result = fmt.Sprintf("⚡ OK! %dms — Pode melhorar! +3 Felicidade, +3 XP", ms)
+		r.Result = fmt.Sprintf("[>>] OK! %dms — Pode melhorar! +3 Felicidade, +3 XP", ms)
 	}
 	return r.Result
 }
@@ -153,9 +153,9 @@ func (r *ReactGame) RenderView() string {
 	}
 	switch r.Phase {
 	case ReactWaiting:
-		return "⏳ TEMPO DE REAÇÃO\n\nEspere aparecer \"GO!\"...\nNÃO aperte Enter antes!"
+		return "[...] TEMPO DE REAÇÃO\n\nEspere aparecer \"GO!\"...\nNÃO aperte Enter antes!"
 	case ReactReady:
-		return "🟢 GO! GO! GO!\n\nAperte ENTER agora!"
+		return "[GO] GO! GO! GO!\n\nAperte ENTER agora!"
 	default:
 		return ""
 	}

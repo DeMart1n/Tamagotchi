@@ -41,22 +41,22 @@ func autoSaveTickCmd() tea.Cmd {
 
 func ToFeed(tama *model.Tama) string {
 	if tama.Hunger == model.MaxHunger {
-		return "🍕 " + tama.Name + " está cheio! Não quer comer."
+		return "[~] " + tama.Name + " está cheio! Não quer comer."
 	}
 
 	amount := 15
-	msg := "🍕 Nhac! " + tama.Name + " comeu tudo!"
+	msg := "[~] Nhac! " + tama.Name + " comeu tudo!"
 
 	switch {
 	case tama.Happiness > 70:
 		amount = 20
-		msg = "🍕 " + tama.Name + " comeu com alegria! Bônus de felicidade!"
+		msg = "[~] " + tama.Name + " comeu com alegria! Bônus de felicidade!"
 	case tama.PissedOf || tama.Angry > 70:
 		amount = 8
-		msg = "🍕 " + tama.Name + " comeu de má vontade..."
+		msg = "[~] " + tama.Name + " comeu de má vontade..."
 	case tama.Depressed:
 		amount = 10
-		msg = "🍕 " + tama.Name + " comeu sem vontade..."
+		msg = "[~] " + tama.Name + " comeu sem vontade..."
 	}
 
 	tama.Hunger = min(tama.Hunger+amount, model.MaxHunger)
@@ -64,53 +64,53 @@ func ToFeed(tama *model.Tama) string {
 	updateWeightStates(tama)
 	tama.TotalFeeds++
 	if tama.AddXP(5) {
-		msg += fmt.Sprintf(" ⬆️ LEVEL UP! Nível %d!", tama.Level)
+		msg += fmt.Sprintf(" [UP] LEVEL UP! Nível %d!", tama.Level)
 	}
 	return msg
 }
 
 func GiveWater(tama *model.Tama) string {
 	if tama.Thirst == model.MaxThirst {
-		return "💧 " + tama.Name + " não está com sede!"
+		return "[o] " + tama.Name + " não está com sede!"
 	}
 
 	amount := 15
-	msg := "💧 Glup! " + tama.Name + " bebeu água."
+	msg := "[o] Glup! " + tama.Name + " bebeu água."
 
 	if tama.Happiness > 70 {
 		amount = 20
-		msg = "💧 " + tama.Name + " bebeu água com gosto! Refrescante!"
+		msg = "[o] " + tama.Name + " bebeu água com gosto! Refrescante!"
 	} else if tama.PissedOf {
 		amount = 10
-		msg = "💧 " + tama.Name + " tomou água emburrado..."
+		msg = "[o] " + tama.Name + " tomou água emburrado..."
 	}
 
 	tama.Thirst = min(tama.Thirst+amount, model.MaxThirst)
 	tama.TotalWaters++
 	if tama.AddXP(5) {
-		msg += fmt.Sprintf(" ⬆️ LEVEL UP! Nível %d!", tama.Level)
+		msg += fmt.Sprintf(" [UP] LEVEL UP! Nível %d!", tama.Level)
 	}
 	return msg
 }
 
 func PetTama(tama *model.Tama) string {
 	if tama.Happiness == model.MaxHappiness {
-		return "❤️  " + tama.Name + " já está muito feliz!"
+		return "[<3] " + tama.Name + " já está muito feliz!"
 	}
 
 	amount := 15
-	msg := "❤️  Purr... " + tama.Name + " gostou do carinho."
+	msg := "[<3] Purr... " + tama.Name + " gostou do carinho."
 
 	switch {
 	case tama.Depressed:
 		amount = 25
-		msg = "❤️  " + tama.Name + " realmente precisava disso... Super efetivo!"
+		msg = "[<3] " + tama.Name + " realmente precisava disso... Super efetivo!"
 	case tama.PissedOf:
 		amount = 5
 		tama.Angry = max(tama.Angry-10, model.MinAngry)
-		msg = "❤️  " + tama.Name + " resistiu, mas se acalmou um pouco."
+		msg = "[<3] " + tama.Name + " resistiu, mas se acalmou um pouco."
 	case tama.Sleeping:
-		return "💤 Shhh... " + tama.Name + " está dormindo."
+		return "[zzZ] Shhh... " + tama.Name + " está dormindo."
 	}
 
 	tama.Happiness = min(tama.Happiness+amount, model.MaxHappiness)
@@ -119,7 +119,7 @@ func PetTama(tama *model.Tama) string {
 	}
 	tama.TotalPets++
 	if tama.AddXP(5) {
-		msg += fmt.Sprintf(" ⬆️ LEVEL UP! Nível %d!", tama.Level)
+		msg += fmt.Sprintf(" [UP] LEVEL UP! Nível %d!", tama.Level)
 	}
 	return msg
 }
@@ -130,23 +130,23 @@ func Annoy(tama *model.Tama) string {
 		tama.Angry = min(tama.Angry+30, model.MaxAngry)
 		tama.Happiness = max(tama.Happiness-10, model.MinHappiness)
 		tama.TotalAnnoys++
-		return "💢 Você acordou " + tama.Name + "! Ele está FURIOSO!"
+		return "[!] Você acordou " + tama.Name + "! Ele está FURIOSO!"
 	}
 
 	if tama.Angry == model.MaxAngry {
-		return "😠 " + tama.Name + " já está furioso!"
+		return "[>.<] " + tama.Name + " já está furioso!"
 	}
 
 	amount := 15
-	msg := "😠 Hey! Você irritou o " + tama.Name + "!"
+	msg := "[>.<] Hey! Você irritou o " + tama.Name + "!"
 
 	if tama.Happiness > 70 {
 		amount = 8
-		msg = "😠 " + tama.Name + " ficou um pouco irritado, mas está de bom humor."
+		msg = "[>.<] " + tama.Name + " ficou um pouco irritado, mas está de bom humor."
 	} else if tama.Depressed {
 		amount = 20
 		tama.Happiness = max(tama.Happiness-5, model.MinHappiness)
-		msg = "😠 " + tama.Name + " ficou muito chateado... Coitado!"
+		msg = "[>.<] " + tama.Name + " ficou muito chateado... Coitado!"
 	}
 
 	tama.Angry = min(tama.Angry+amount, model.MaxAngry)
@@ -156,16 +156,16 @@ func Annoy(tama *model.Tama) string {
 
 func StartSleep(tama *model.Tama) (string, tea.Cmd) {
 	if tama.Sleepy == model.MaxSleepy {
-		return "😴 " + tama.Name + " não está com sono!", nil
+		return "[zzZ] " + tama.Name + " não está com sono!", nil
 	}
 	if tama.Sleeping {
-		return "😴 " + tama.Name + " já está dormindo...", nil
+		return "[zzZ] " + tama.Name + " já está dormindo...", nil
 	}
 	tama.Sleeping = true
 	tama.TotalSleeps++
-	msg := "😴 Shhh... " + tama.Name + " foi dormir."
+	msg := "[zzZ] Shhh... " + tama.Name + " foi dormir."
 	if tama.AddXP(5) {
-		msg += fmt.Sprintf(" ⬆️ LEVEL UP! Nível %d!", tama.Level)
+		msg += fmt.Sprintf(" [UP] LEVEL UP! Nível %d!", tama.Level)
 	}
 	return msg, sleepCmd()
 }
@@ -177,21 +177,21 @@ func WakeUp(tama *model.Tama) {
 
 func Exercise(tama *model.Tama) string {
 	if tama.Sleeping {
-		return "💤 " + tama.Name + " está dormindo... Não dá para exercitar."
+		return "[zzZ] " + tama.Name + " está dormindo... Não dá para exercitar."
 	}
 	if tama.Hunger < 20 {
-		return "🏃 " + tama.Name + " está com muita fome para se exercitar!"
+		return "[>>] " + tama.Name + " está com muita fome para se exercitar!"
 	}
 	if tama.Weight == model.MinWeight {
-		return "🏃 " + tama.Name + " já está no peso mínimo!"
+		return "[>>] " + tama.Name + " já está no peso mínimo!"
 	}
 
 	weightLoss := 5
-	msg := "🏃 " + tama.Name + " fez exercício e está mais saudável!"
+	msg := "[>>] " + tama.Name + " fez exercício e está mais saudável!"
 
 	if tama.Happiness > 70 {
 		weightLoss = 7
-		msg = "🏃 " + tama.Name + " fez exercício com empolgação! Super treino!"
+		msg = "[>>] " + tama.Name + " fez exercício com empolgação! Super treino!"
 	}
 
 	tama.Weight = max(tama.Weight-weightLoss, model.MinWeight)
@@ -200,7 +200,7 @@ func Exercise(tama *model.Tama) string {
 	updateWeightStates(tama)
 	tama.TotalExercises++
 	if tama.AddXP(8) {
-		msg += fmt.Sprintf(" ⬆️ LEVEL UP! Nível %d!", tama.Level)
+		msg += fmt.Sprintf(" [UP] LEVEL UP! Nível %d!", tama.Level)
 	}
 	return msg
 }

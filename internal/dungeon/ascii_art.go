@@ -168,81 +168,81 @@ func BiomeArt(biome Biome) string {
 	}
 }
 
-// Artes dos biomas
+// Artes dos biomas — estilo GBA/retro sem emojis
 var forestArt = `
-    🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲
-    🌲                                 🌲
-    🌲     ░░░░░░░░░░░░░░░░░░░░░░░     🌲
-    🌲     ░                       ░     🌲
-    🌲     ░   🍃  FLORESTA  🍃    ░     🌲
-    🌲     ░        ENCANTADA       ░     🌲
-    🌲     ░                       ░     🌲
-    🌲     ░░░░░░░░░░░░░░░░░░░░░░░     🌲
-    🌲                                 🌲
-    🌲     Cogumelos brilham no chão    🌲
-    🌲     O ar é puro e fresco...      🌲
-    🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲🌲
-`
+    ,,  ,,    /\    ,,  ,,    /\    ,,
+   /||\//\\  /||\  /||\//\\  /||\  /||\
+  / || \  \\/ || \/ || \  \\/ || \/ || \
+  |_||_|  ||  ||_|  ||_|  ||  ||_|  ||_|
+  ,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,
+  :.:.:.:.:.:.:.:.:.:.:.:.:.:.:.:.:.:.:.:.
+
+    +---------------------------------+
+    |       FLORESTA  ENCANTADA       |
+    +---------------------------------+
+
+    Cogumelos brilham no chao.
+    O ar e puro e fresco...`
 
 var icyArt = `
-    ❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️
-    ❄️                                 ❄️
-    ❄️     ░░░░░░░░░░░░░░░░░░░░░░░     ❄️
-    ❄️     ░                       ░     ❄️
-    ❄️     ░   ❄️  TUNDRA  ❄️      ░     ❄️
-    ❄️     ░      CONGELANTE       ░     ❄️
-    ❄️     ░                       ░     ❄️
-    ❄️     ░░░░░░░░░░░░░░░░░░░░░░░     ❄️
-    ❄️                                 ❄️
-    ❄️     O vento gelado corta a pele  ❄️
-    ❄️     Seu hálito congela no ar...  ❄️
-    ❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️❄️
-`
+     *    .  *  .    *  .  *   .  *
+    /\   *  /\  . * /\  *  /\   *  /\
+   /  \ . /  \  * /  \ . /  \  * /  \
+  /    \/    \  /    \/    \  /    \/
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ......................................
+
+    +---------------------------------+
+    |       TUNDRA  CONGELANTE        |
+    +---------------------------------+
+
+    O vento gelado corta a pele.
+    Seu halito congela no ar...`
 
 var volcanicArt = `
-    🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋
-    🌋                                 🌋
-    🌋     ░░░░░░░░░░░░░░░░░░░░░░░     🌋
-    🌋     ░                       ░     🌋
-    🌋     ░   🔥 MONTANHAS 🔥     ░     🌋
-    🌋     ░      DE FOGO          ░     🌋
-    🌋     ░                       ░     🌋
-    🌋     ░░░░░░░░░░░░░░░░░░░░░░░     🌋
-    🌋                                 🌋
-    🌋     Lava borbulha ao redor...    🌋
-    🌋     O calor é sufocante!         🌋
-    🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋🌋
-`
+        /\          /\
+       /##\    .   /##\    .
+      /####\ /#\ /####\ /#\
+     /######\####\######\####\
+    ~^~^~^~^~^~^~^~^~^~^~^~^~^~^~
+    ~.~.~.~.~.~.~.~.~.~.~.~.~.~.~
+
+    +---------------------------------+
+    |      MONTANHAS  DE  FOGO        |
+    +---------------------------------+
+
+    Lava borbulha ao redor...
+    O calor e sufocante!`
 
 var abyssalArt = `
-    🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-    🌊                                 🌊
-    🌊     ░░░░░░░░░░░░░░░░░░░░░░░     🌊
-    🌊     ░                       ░     🌊
-    🌊     ░   🌊  ABISSO  🌊      ░     🌊
-    🌊     ░    MISTERIOSO         ░     🌊
-    🌊     ░                       ░     🌊
-    🌊     ░░░░░░░░░░░░░░░░░░░░░░░     🌊
-    🌊                                 🌊
-    🌊     Escuridão infinita...        🌊
-    🌊     Algo observa das sombras...  🌊
-    🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-`
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~  .    .        .    .        .    .  ~
+    ~     .    .  .     .    .  .     .    ~
+    ~  .     .       .     .       .     .~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ........................................
+
+    +---------------------------------+
+    |       ABISSO  MISTERIOSO        |
+    +---------------------------------+
+
+    Escuridao infinita...
+    Algo observa das sombras...`
 
 var defaultBiomeArt = `
-    🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️
-    🏔️                                 🏔️
-    🏔️     ░░░░░░░░░░░░░░░░░░░░░░░     🏔️
-    🏔️     ░                       ░     🏔️
-    🏔️     ░   🏔️  MASMORRA  🏔️   ░     🏔️
-    🏔️     ░       SOMBRIA        ░     🏔️
-    🏔️     ░                       ░     🏔️
-    🏔️     ░░░░░░░░░░░░░░░░░░░░░░░     🏔️
-    🏔️                                 🏔️
-    🏔️     Pedras antigas te observam   🏔️
-    🏔️     O perigo espreita...         🏔️
-    🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️🏔️
-`
+     _____     _____     _____     _____
+    |     |   |     |   |     |   |     |
+    | [ ] |   | [ ] |   | [ ] |   | [ ] |
+    |_____|   |_____|   |_____|   |_____|
+    ========================================
+    ........................................
+
+    +---------------------------------+
+    |        MASMORRA  SOMBRIA        |
+    +---------------------------------+
+
+    Pedras antigas te observam.
+    O perigo espreita...`
 
 // GetBiomeIntroMessage retorna a string formatada com a arte do bioma e todos os efeitos
 func GetBiomeIntroMessage(biome Biome) string {
@@ -252,19 +252,19 @@ func GetBiomeIntroMessage(biome Biome) string {
 	var sb strings.Builder
 	sb.WriteString(art)
 	sb.WriteString("\n\n")
-	sb.WriteString(strings.Repeat("=", 50))
+	sb.WriteString(strings.Repeat("-", 40))
 	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf("📍 BIOMA: %s\n", biome.String()))
-	sb.WriteString(fmt.Sprintf("📖 Efeitos: %s\n", formatBiomeEffects(modifier)))
-	sb.WriteString(strings.Repeat("=", 50))
+	sb.WriteString(fmt.Sprintf("  BIOMA: %s\n", biome.String()))
+	sb.WriteString(fmt.Sprintf("  Efeitos: %s\n", FormatBiomeEffects(modifier)))
+	sb.WriteString(strings.Repeat("-", 40))
 	sb.WriteString("\n")
-	sb.WriteString("\n✨ Pressione ENTER para entrar na masmorra...")
+	sb.WriteString("\n  Pressione ENTER para entrar...")
 
 	return sb.String()
 }
 
-// formatBiomeEffects formata os efeitos do bioma em uma string legível
-func formatBiomeEffects(m BiomeModifier) string {
+// FormatBiomeEffects formata os efeitos do bioma em uma string legível.
+func FormatBiomeEffects(m BiomeModifier) string {
 	var effects []string
 	if m.HungerRecoveryBonus > 0 {
 		effects = append(effects, fmt.Sprintf("+%d recuperação fome", m.HungerRecoveryBonus))
