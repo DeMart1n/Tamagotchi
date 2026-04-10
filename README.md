@@ -1,273 +1,224 @@
-# TamaGO 🎮
+## Roadmap: Novas masmorras & Biomas
 
-<div align="center">
-
-**Um Tamagotchi RPG desenvolvido em Go com interface CLI interativa**
-
-[![Go Version](https://img.shields.io/badge/Go-1.25-00ADD8?style=for-the-badge&logo=go)](https://go.dev/)
-[![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
-[![Status](https://img.shields.io/badge/status-MVP-orange?style=for-the-badge)](https://github.com)
-
-</div>
+Uma visão organizada das tarefas e subtarefas para implementação das novas masmorras, biomas e sistemas relacionados.
 
 ---
 
-## 📖 Sobre o Projeto
+### 1) Novas masmorras & biomas
 
-**TamaGO** é um jogo de Tamagotchi RPG desenvolvido em Go que combina a nostalgia dos pets virtuais clássicos com mecânicas de RPG modernas. Atualmente em fase de **MVP**, o projeto oferece uma experiência interativa via linha de comando onde você cuida do seu TamaGO, mantendo-o alimentado, hidratado, feliz e descansado.
+- [ ] Definir biomas e efeitos principais
+	- [ ] Florestal — +recuperação de fome; +encontros amistosos; -vulnerabilidade a fogo
+	- [ ] Gélido — -velocidade; +DEF gelo; chance de congelamento
+	- [ ] Vulcânico — +ATK inimigos; DOT (fogo over-time); -felicidade
+	- [ ] Abissal — +sorte inimiga; +chance de loot raro; -regeneração de HP do `Tama`
 
-O objetivo é evoluir o TamaGO para um RPG completo com sistema de níveis, batalhas, equipamentos e rankings globais!
+- [ ] Projetar layout por bioma (tipos de salas, tema visual, pontos de descanso/loja)
 
----
+- [ ] Atualizar gerador de andares para suportar biomas (aleatoriedade/seed)
 
-## ✨ Funcionalidades
+- [ ] Criar pools de inimigos e encontros por bioma (incluindo inimigos raros exclusivos)
 
-### 🐾 Sistema de Pet Virtual
-- **Necessidades Vitais**: Fome, sede, energia, felicidade e humor
-- **Interface CLI Interativa**: Terminal UI responsivo e animado usando Bubble Tea
-- **Estados Emocionais**: Seu TamaGO pode ficar feliz, irritado, deprimido ou furioso
-- **Ciclo de Vida**: Sistema de degradação automática das estatísticas ao longo do tempo
-- **Evolução**: Baby → Criança → Adolescente → Adulto → Ancião
-- **Sistema de Morte**: Game Over se você não cuidar bem do seu TamaGO
-- **Achievements**: Conquistas desbloqueáveis por marcos no jogo
+- [ ] Adicionar assets ASCII por bioma (`internal/dungeon/ascii_art.go`)
 
-### ⚔️ Sistema de Dungeon RPG
-- **Masmorra de 5 andares** com combate por turnos, salas de descanso e tesouro
-- **Combate tático**: Atacar, Defender, usar Itens ou Fugir
-- **12 equipamentos** em 3 slots (Arma, Armadura, Acessório) com 4 raridades
-- **9 tipos de inimigos** que escalam com o level do jogador
-- **Boss Fight**: Dragão Ancião no andar 5
-- **Inventário persistente**: Equipamentos e ouro salvos entre sessões
-- **Stats derivados**: HP, ATK, DEF, VEL e Sorte baseados no level/estágio do Tama
-- **Itens consumíveis**: Poções e elixirs comprados em salas de descanso
-- **3 conquistas exclusivas** de dungeon (Aventureiro, Mata-Dragão, Mestre da Masmorra)
-
-> 📄 Documentação completa do sistema de dungeon: [DUNGEON.md](DUNGEON.md)
+- [ ] Mapear salas especiais: boss room, treasure, descanso/loja, eventos raros
 
 ---
 
-## 🚀 Roadmap
+### 2) Efeitos de bioma nos atributos
 
-### ✅ Implementado
-- [x] Sistema de necessidades vitais e estados emocionais
-- [x] Interface CLI com Bubble Tea
-- [x] Sistema de níveis e experiência (XP)
-- [x] Evolução do TamaGO com diferentes estágios
-- [x] Stats de combate (HP, ATK, DEF, VEL, Sorte)
-- [x] Dungeon RPG com 5 andares e boss fight
-- [x] Sistema de combate por turnos
-- [x] Equipamentos com raridades (Comum → Lendário)
-- [x] Sistema de inventário e economia (ouro)
-- [x] Itens consumíveis (poções e elixirs)
-- [x] Achievements / Conquistas
-- [x] Persistência de dados (save/load)
+- [ ] Especificar tabela de modificadores por bioma (HP, ATK, DEF, VEL, LUCK, regen)
 
-### 🔮 Futuro
-- [ ] Batalhas PvP entre TamaGOs
-- [ ] Ranking global online
-- [ ] Novas dungeons e biomas
-- [ ] Habilidades especiais e classes
-- [ ] Missões e quests
-- [ ] Sistema de amizades e trocas
+- [ ] Implementar aplicação dos modificadores em combate (`internal/dungeon/combat.go`)
+
+- [ ] Aplicar modificadores fora de combate (ticks: fome/sono/felicidade enquanto no bioma)
+
+- [ ] Balancear valores e adicionar testes unitários para validação
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+### 3) Habilidades especiais & classes
 
-- **[Go 1.25](https://go.dev/)** - Linguagem de programação principal
-- **[Bubble Tea](https://github.com/charmbracelet/bubbletea)** - Framework TUI para interfaces de terminal
-- **[Lipgloss](https://github.com/charmbracelet/lipgloss)** - Estilização e layout para terminal
-- **[Bubbles](https://github.com/charmbracelet/bubbles)** - Componentes TUI reutilizáveis
+- [x] Criar `internal/model/skills.go` com struct `Skill` (Nome, Descrição, Custo de Mana, Poder, Tipo)
+- [x] Definir banco de habilidades iniciais: Pancada Pesada, Luz Curativa, Rugido Intimidador, Foco Interior
+- [x] Implementar lógica de desbloqueio por estágio de evolução (Baby, Child, Teen, Adult)
+- [x] Atualizar struct `Tama` com campos `MP`, `MPMax` e lista de habilidades conhecidas
+- [x] Calcular `MPMax` escalonado por nível/estágio em `internal/dungeon/stats.go`
+- [x] Incluir `ActionSkill` e `executeSkill` em `internal/dungeon/combat.go`
+- [x] Atualizar `internal/dungeon/dungeon.go` com estados de seleção de habilidades e cursores
+- [x] Garantir compatibilidade com saves antigos (Pets sem habilidades recebem ao entrar na dungeon)
+- [x] Criar `MPBar` em `internal/dungeon/ascii_art.go` para representação visual da mana
+- [x] Atualizar `internal/ui/dungeon_view.go` com barra de MP e submenu dinâmico de habilidades
+- [ ] Definir 4 classes iniciais e estatísticas base
+	- [ ] `Guardiã` — Tank (HP ↑, DEF ↑)
+	- [ ] `Guerreiro` — Dano (ATK ↑)
+	- [ ] `Místico` — Suporte (buffs/heal)
+	- [ ] `Rápida` — Crítico/Velocidade (VEL ↑, CRIT ↑)
 
----
+- [ ] Projetar 3 habilidades por classe (2 ativas + 1 passiva)
 
-## 📦 Instalação
+- [ ] Especificar números base: efeitos %, duração, cooldowns, custos
 
-### Pré-requisitos
-
-- Go 1.25 ou superior instalado no sistema
-- Terminal com suporte a cores e Unicode
-
-### Passos
-
-1. **Clone o repositório**
-```bash
-git clone https://github.com/seu-usuario/TamaGO.git
-cd TamaGO
-```
-
-2. **Instale as dependências**
-```bash
-go mod download
-```
-
-3. **Compile o projeto**
-```bash
-cd tamago
-go build -o tamago
-```
-
-4. **Execute o jogo**
-```bash
-./tamago
-```
-
-Ou compile e execute diretamente:
-```bash
-go run main.go
-```
-
-No docker:
-
-```bash
-docker compose up -d --build
-```
-
-```bash
-docker compose exec tamago sh
-# dentro do container
-./tamago
-```
+- [ ] UI/TUI: seleção de classe no onboarding e painel de habilidades visível
 
 ---
 
-## 🎮 Como Jogar
+### 4) Sistema de missões & quests
 
-### Comandos Disponíveis
+- [ ] Definir tipos de missão: story (única), diárias, repeatable
 
-| Comando | Atalho | Descrição |
-|---------|--------|-----------|
-| `feed` | `f` | Alimenta o TamaGO (reduz fome) |
-| `water` | `w` | Dá água ao TamaGO (reduz sede) |
-| `pet` | `p` | Faz carinho no TamaGO (aumenta felicidade) |
-| `sleep` | `s` | Coloca o TamaGO para dormir (recupera energia) |
-| `annoy` | `a` | Irrita o TamaGO (aumenta raiva) |
-| `dungeon` | `d` | Entra na masmorra (requer Level 3+) |
-| `status` | - | Atualiza e mostra o status atual |
-| `quit`, `exit`, `q` | - | Sai do jogo |
+- [ ] Criar 10 missões iniciais
+	- [ ] 2 × Story
+	- [ ] 3 × Diárias
+	- [ ] 5 × Repeatable
 
-### Comandos Secretos
+- [x] Criar esquema de dados persistente e serializar em `tamago_save.json`
 
-| Comando | Descrição |
-|---------|-----------|
-| `setlvl <n>` | Seta o level do Tama diretamente (ex: `setlvl 10`) |
+- [ ] Implementar fluxo: gerar → aceitar → completar → reivindicar recompensa + notificações
 
-### Controles
-
-- **Enter**: Envia o comando digitado
-- **ESC**: Sai do jogo / Sai da dungeon
-- **Ctrl+C**: Sai do jogo
-
-### Dicas
-
-- Mantenha todas as barras de status equilibradas
-- Se a fome ou sede chegarem a zero, seu TamaGO pode morrer
-- Um TamaGO feliz tem melhor desempenho (bônus de stats na dungeon!)
-- Não o irrite muito, ou ele ficará furioso!
-- As estatísticas diminuem automaticamente com o tempo, fique atento!
-- Alcance Level 3 para desbloquear a Dungeon RPG
+- [ ] Integrar missões com dungeons, minigames e conquistas
 
 ---
 
-## 📁 Estrutura do Projeto
+### 5) Expandir loja & comércio com NPCs
 
-```
-TamaGO/
-├── tamago/
-│   └── main.go              # Ponto de entrada e migração de saves
-├── internal/
-│   ├── model/
-│   │   ├── tama.go          # Modelo de dados do Tamagotchi
-│   │   ├── evolution.go     # Sistema de evolução por estágios
-│   │   ├── achievements.go  # Conquistas desbloqueáveis
-│   │   └── events.go        # Sistema de eventos
-│   ├── ui/
-│   │   ├── tui.go           # Interface do terminal (Bubble Tea)
-│   │   ├── view.go          # Renderização da interface
-│   │   ├── update.go        # Lógica de atualização e comandos
-│   │   ├── minigames.go     # Modos de jogo (dungeon, etc.)
-│   │   └── dungeon_view.go  # Renderização da dungeon
-│   ├── dungeon/
-│   │   ├── dungeon.go       # Máquina de estados principal
-│   │   ├── combat.go        # Motor de combate por turnos
-│   │   ├── enemy.go         # Inimigos e pools por andar
-│   │   ├── floor.go         # Geração de andares e salas
-│   │   ├── equipment.go     # Equipamentos e inventário
-│   │   ├── items.go         # Itens consumíveis
-│   │   ├── stats.go         # Stats de combate derivados
-│   │   └── ascii_art.go     # ASCII art dos inimigos
-│   └── persistence/
-│       └── save.go          # Sistema de save/load
-├── DUNGEON.md               # Documentação do sistema de dungeon
-├── go.mod                   # Dependências do projeto
-├── go.sum                   # Checksums das dependências
-└── README.md                # Este arquivo
-```
+- [ ] Adicionar categorias de loja: Consumíveis, Equipamento, Itens de qualidade, Itens únicos NPC
+
+- [ ] Implementar restock dinâmico (rotação diária / por descanso)
+
+- [ ] Sistema de preços baseado em raridade e oferta/demanda
+
+- [ ] Interface TUI: compra / venda / confirmação (mostrar impacto em gold/inventário)
+
+- [ ] Balanceamento da economia e testes de fluxo
 
 ---
 
-## 🎨 Preview
+### 6) Troca livre com NPC (3-por-1)
 
-```
-╭──────────────────────╮
-│   🎮 TAMAGOTCHI CLI   │
-╰──────────────────────╯
+- [ ] Design da mecânica: NPC em descanso oferece 3 itens gratuitos; jogador escolhe 1
 
-╭──────────────╮          ╭────────────────────────────╮
-│              │          │       STATUS VITAIS        │
-│   ✨ 😄 ✨   │         │                            │
-│              │          │ Fome       ▇▇▇▇▇▇░░░   70% │
-│    TamaGo     │         │ Sede       ▇▇▇▇▇▇▇░░   80% │
-│   Radiante!  │          │ Energia    ▇▇▇▇░░░░░   45% │
-│              │          │ Felicidade ▇▇▇▇▇▇▇▇░   90% │
-╰──────────────╯          │ Calma      ▇▇▇▇▇▇▇▇▇   95% │
-                          ╰────────────────────────────╯
+- [ ] Implementar fluxo de interação na área de descanso
 
-📢 ✨ Olá! Cuide bem do TamaGo!
-───────────────────────────────────────────
-> feed_
+- [ ] Balancear oferta: regras de raridade/nível e frequência de aparição
 
-ESC/Ctrl+C: Sair • Comandos: (f)eed, (w)ater, (p)et, (s)leep
-```
+- [ ] Testes de UX para validar impacto no gameplay
 
 ---
 
-## 🤝 Contribuindo
+### 7) Mais chefes, encontros & loot
 
-Contribuições são sempre bem-vindas! Se você tem ideias para melhorar o TamaGO:
+- [ ] Criar 6 novos encontros temáticos
 
-1. Faça um fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/MinhaFeature`)
-3. Commit suas mudanças (`git commit -m 'Adiciona MinhaFeature'`)
-4. Push para a branch (`git push origin feature/MinhaFeature`)
-5. Abra um Pull Request
+- [ ] Projetar 4 chefes (um por bioma) com mecânicas únicas e fases
 
----
+- [ ] Definir tabela de drops e raridades, integrar com `AllEquipment`
 
-## 📝 Licença
+- [ ] Implementar mecânicas de chefe (phases, enrage, triggers)
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+- [ ] Integrar drops ao `Inventory` e sistema de loot
 
 ---
 
-## 👥 Autores
+### 8) PvE balanceamento & escalonamento
 
-Desenvolvido com ❤️ por [Cauã De Martin](https://github.com/DeMart1n) e [Luiz Felipe Arcanjo](https://github.com/luiz0ar)
+- [ ] Definir fórmula de scaling por nível do `Tama` e floor
 
----
+- [ ] Simular runs e ajustar XP / gold / drop rates
 
-## 🌟 Agradecimentos
+- [ ] Adicionar configurações de dificuldade: Fácil / Normal / Difícil
 
-- [Charm](https://charm.sh/) pela incrível biblioteca Bubble Tea
-- Comunidade Go pela linguagem fantástica
-- Tamagotchi original pela inspiração nostálgica
+- [ ] Definir KPIs de balanceamento (winrate, tempo médio, gold/level)
 
 ---
 
-<div align="center">
+### 9) Sistema de amigos & trocas entre jogadores
 
-**Se você gostou do projeto, deixe uma ⭐!**
+- [ ] Especificar friend list (adicionar / remover / limites)
 
-[Reportar Bug](https://github.com/seu-usuario/TamaGO/issues) · [Solicitar Feature](https://github.com/seu-usuario/TamaGO/issues) · [Documentação](https://github.com/seu-usuario/TamaGO/wiki)
+- [ ] Implementar fluxo de presentes e trocas (offline-friendly)
 
-</div>
+- [ ] Proteções anti-abuso: cooldowns e limites diários
+
+- [ ] Protótipo offline: troca por token local
+
+---
+
+### 10) PvP batalhas (online — bônus)
+
+- [ ] Definir regras PvP (turnos, itens permitidos, condições de vitória)
+
+- [ ] Implementar modo local (pass-and-play) para testes sem rede
+
+- [ ] Planejar matchmaker mínimo e sincronização (se houver backend)
+
+- [ ] Definir recompensas/placares PvP (XP/elo/medalhas)
+
+---
+
+### 11) Ranking global & leaderboards (bônus)
+
+- [ ] Especificar métricas (melhor run, MMR, vitórias PvP, tempo)
+
+- [ ] Definir protocolo mínimo para submissão de scores
+
+- [ ] Implementar protótipo local (top-10 salvo localmente)
+
+---
+
+### 12) Matchmaking / infra online (bônus)
+
+- [ ] Escolher stack (REST + WebSocket recomendado)
+
+- [ ] Definir endpoints essenciais: `/auth`, `/submit-score`, `/leaderboard`, `/friends`
+
+- [ ] Criar protótipo de server em Go (esqueleto) e scripts básicos de deploy (opcional)
+
+---
+
+### 13) Expansão de conquistas & sincronização
+
+- [ ] Listar novas conquistas relacionadas às features adicionadas
+
+- [ ] Implementar migrador de saves para adicionar/validar novas conquistas em `tamago_save.json`
+
+- [ ] Notificações & UI para exibir unlocks e histórico de conquistas
+
+---
+
+### 14) UI melhorias & polimento
+
+- [ ] Atualizar HUD para mostrar bioma atual, classe selecionada e missão ativa
+
+- [ ] Criar nova arte ASCII/estados para chefes e biomas (`internal/dungeon/ascii_art.go`)
+
+- [ ] Onboarding para explicar classes, biomas e funcionamento da loja
+
+- [ ] Melhorar feedback de combate (dano, buffs, debuffs, loot)
+
+---
+
+### 15) API / backend scaffolding (bônus)
+
+- [ ] Criar esqueleto de API para autenticação, leaderboard e friends
+
+- [ ] Priorizar endpoints: `/auth`, `/submit-score`, `/leaderboard`, `/friends`
+
+- [ ] Documentar contrato e exemplos no `README.md`
+
+---
+
+### 16) Testes, documentação e migração
+
+- [x] Criar esquema de dados persistente com `SaveData` envelope e `schema_version`
+- [x] Implementar migração automática de saves antigos (formato flat → envelope)
+- [x] Escrita atômica via `.tmp` + `os.Rename` para evitar corrupção por crash
+- [x] Expandir `save_test.go` com testes de roundtrip, degradação offline, migração legacy e atomicidade
+- [ ] Escrever testes unitários para biomas, classes, quests e combat hooks
+
+- [ ] Criar script de migração para `tamago_save.json` (novos campos)
+
+- [ ] Atualizar `README.md` com comandos, lojas, classes e dungeons
+
+- [ ] Planejar 5 playtests internos para feedback de balanceamento
+
+- [ ] Revisar e polir mensagens/feedback de loot e conquistas
