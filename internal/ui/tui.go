@@ -104,7 +104,7 @@ func InitialModel(tama *model.Tama) Model {
 	return Model{
 		tama:       tama,
 		textInput:  ti,
-		message:    "✨ Olá! Cuide bem do " + tama.Name + "!",
+		message:    "* Ola! Cuide bem do " + tama.Name + "!",
 		frame:      0,
 		dungeonInv: inv,
 	}
@@ -133,31 +133,31 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case lifeCycleTickMsg:
 		Tick(m.tama)
 		if m.tama.Dead {
-			m.message = "💀 " + m.tama.Name + " não sobreviveu..."
+			m.message = "[X] " + m.tama.Name + " nao sobreviveu..."
 			return m, nil
 		}
 		if m.activeEvent != nil {
 			m.eventTimer--
 			if m.eventTimer <= 0 {
 				m.applyEventResult(m.activeEvent.Choice2Result)
-				m.message = "⏰ Tempo esgotado! " + m.activeEvent.Choice2Result.Message
+				m.message = "[!] Tempo esgotado! " + m.activeEvent.Choice2Result.Message
 				m.activeEvent = nil
 			}
 		}
 		if newAch := model.CheckAchievements(m.tama); len(newAch) > 0 {
-			m.message = "🏆 " + strings.Join(newAch, ", ")
+			m.message = "[CONQUISTA] " + strings.Join(newAch, ", ")
 		}
 		if m.activeEvent == nil && m.gameMode == ModeNormal && m.tama.TotalTicks%3 == 0 {
 			if evt := tryRandomEvent(); evt != nil {
 				if evt.Type == EventInteractive {
 					m.activeEvent = evt
 					m.eventTimer = 3
-					m.message = fmt.Sprintf("🎲 %s [1] %s [2] %s", evt.Description, evt.Choice1Label, evt.Choice2Label)
+					m.message = fmt.Sprintf("[EVENTO] %s [1] %s [2] %s", evt.Description, evt.Choice1Label, evt.Choice2Label)
 				} else {
 					applyEventDirect(m.tama, evt)
-					icon := "🌟"
+					icon := "[+]"
 					if evt.Type == EventNegative {
-						icon = "⚡"
+						icon = "[-]"
 					}
 					m.message = fmt.Sprintf("%s %s", icon, evt.Description)
 				}
@@ -167,7 +167,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case wakeUpMsg:
 		WakeUp(m.tama)
-		m.message = "☀️ " + m.tama.Name + " acordou renovado!"
+		m.message = "[*] " + m.tama.Name + " acordou renovado!"
 		return m, nil
 
 	case autoSaveTickMsg:
@@ -178,7 +178,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case reactGoMsg:
 		if m.gameMode == ModeReact && m.reactGame != nil {
 			m.reactGame.HandleGo()
-			m.message = "🟢 GO! Aperte ENTER!"
+			m.message = ">> GO! Aperte ENTER! <<"
 		}
 		return m, nil
 
@@ -189,14 +189,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.saveDungeonInventory()
 				m.gameMode = ModeNormal
 				m.dungeonGame = nil
-				m.message = "🎮 Saiu da masmorra."
+				m.message = "[>] Saiu da masmorra."
 				return m, nil
 			}
 			if m.gameMode != ModeNormal {
 				m.gameMode = ModeNormal
 				m.guessGame = nil
 				m.reactGame = nil
-				m.message = "🎮 Saiu do mini-game."
+				m.message = "[>] Saiu do mini-game."
 				return m, nil
 			}
 			m.saveDungeonInventory()
@@ -212,7 +212,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.guessGame.Done {
 					m.gameMode = ModeNormal
 					m.guessGame = nil
-					m.message = "🎮 Voltou ao modo normal."
+					m.message = "[>] Voltou ao modo normal."
 					return m, nil
 				}
 				m.message = m.guessGame.TryGuess(input)
@@ -232,7 +232,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.reactGame.Done {
 					m.gameMode = ModeNormal
 					m.reactGame = nil
-					m.message = "🎮 Voltou ao modo normal."
+					m.message = "[>] Voltou ao modo normal."
 					return m, nil
 				}
 				result := m.reactGame.HandlePress()
@@ -266,9 +266,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.saveDungeonInventory()
 					m.gameMode = ModeNormal
 					m.dungeonGame = nil
-					m.message = "🎮 Voltou da masmorra."
+					m.message = "[>] Voltou da masmorra."
 					if newAch := model.CheckAchievements(m.tama); len(newAch) > 0 {
-						m.message += " 🏆 " + strings.Join(newAch, ", ")
+						m.message += " [CONQUISTA] " + strings.Join(newAch, ", ")
 					}
 				}
 				return m, nil
@@ -288,10 +288,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.activeEvent != nil && (input == "1" || input == "2") {
 				if input == "1" {
 					m.applyEventResult(m.activeEvent.Choice1Result)
-					m.message = "🎲 " + m.activeEvent.Choice1Result.Message
+					m.message = "[EVENTO] " + m.activeEvent.Choice1Result.Message
 				} else {
 					m.applyEventResult(m.activeEvent.Choice2Result)
-					m.message = "🎲 " + m.activeEvent.Choice2Result.Message
+					m.message = "[EVENTO] " + m.activeEvent.Choice2Result.Message
 				}
 				m.activeEvent = nil
 				return m, nil
@@ -300,7 +300,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			extraCmd := m.handleCommand(input)
 
 			if newAchievements := model.CheckAchievements(m.tama); len(newAchievements) > 0 {
-				m.message += " 🏆 " + strings.Join(newAchievements, ", ")
+				m.message += " [CONQUISTA] " + strings.Join(newAchievements, ", ")
 			}
 
 			if m.tama.Dead {
@@ -336,7 +336,7 @@ func (m *Model) handleCommand(cmd string) tea.Cmd {
 	case "annoy", "a":
 		m.message = Annoy(m.tama)
 	case "status":
-		m.message = fmt.Sprintf("📊 Lv.%d | XP: %d/%d | Ticks: %d | Estágio: %s",
+		m.message = fmt.Sprintf("[STATUS] Lv.%d | XP: %d/%d | Ticks: %d | Estagio: %s",
 			m.tama.Level, m.tama.XP, model.XPForNextLevel(m.tama.Level),
 			m.tama.TotalTicks, m.tama.Stage.String())
 	case "achievements", "ach":
@@ -344,22 +344,22 @@ func (m *Model) handleCommand(cmd string) tea.Cmd {
 	case "play guess", "guess":
 		m.gameMode = ModeGuess
 		m.guessGame = NewGuessGame()
-		m.message = "🔢 Adivinhe o número de 1 a 100! Você tem 7 tentativas."
+		m.message = "[JOGO] Adivinhe o numero de 1 a 100! Voce tem 7 tentativas."
 	case "play react", "react":
 		m.gameMode = ModeReact
 		m.reactGame = NewReactGame()
-		m.message = "⏳ Espere o GO! aparecer e aperte Enter o mais rápido possível!"
+		m.message = "[JOGO] Espere o GO! aparecer e aperte Enter o mais rapido possivel!"
 		return m.reactGame.StartCmd()
 	case "play":
-		m.message = "🎮 Mini-games: 'play guess' (adivinhação) ou 'play react' (reação)"
+		m.message = "[>] Mini-games: 'play guess' (adivinhação) ou 'play react' (reação)"
 	case "dungeon", "d":
 		if m.tama.Level < 3 {
-			m.message = "🗡️ Voce precisa ser pelo menos Level 3 para entrar na masmorra!"
+			m.message = "[DUNGEON] Voce precisa ser pelo menos Level 3 para entrar na masmorra!"
 			return nil
 		}
 		m.gameMode = ModeDungeon
 		m.dungeonGame = dungeon.NewDungeonRun(m.tama, m.dungeonInv)
-		m.message = "🗡️ Entrando na Masmorra..."
+		m.message = "[DUNGEON] Entrando na Masmorra..."
 	default:
 		// Comando secreto: setlvl <numero>
 		if strings.HasPrefix(cmd, "setlvl ") {
@@ -376,7 +376,7 @@ func (m *Model) handleCommand(cmd string) tea.Cmd {
 			m.message = fmt.Sprintf("Level setado para %d (%s)", lvl, m.tama.Stage.String())
 			return nil
 		}
-		m.message = fmt.Sprintf("❓ Comando '%s' desconhecido.", cmd)
+		m.message = fmt.Sprintf("[?] Comando '%s' desconhecido.", cmd)
 		m.isError = true
 	}
 	return nil
@@ -401,7 +401,7 @@ func (m *Model) renderAchievementsList() string {
 			parts = append(parts, a.Icon+" "+a.Name)
 		}
 	}
-	header := fmt.Sprintf("🏆 Conquistas (%d/%d): ", unlocked, total)
+	header := fmt.Sprintf("[CONQUISTAS] (%d/%d): ", unlocked, total)
 	if len(parts) == 0 {
 		return header + "Nenhuma ainda!"
 	}
@@ -424,7 +424,7 @@ func (m Model) View() string {
 	}
 
 	// 1. Cabeçalho
-	title := styleTitle.Render("🎮 TAMAGOTCHI CLI")
+	title := styleTitle.Render("[>] TAMAGOTCHI CLI")
 
 	// 2. Área Principal
 	var mainContent string
@@ -459,11 +459,11 @@ func (m Model) View() string {
 
 	// 3. Feedback do sistema (Mensagem)
 	var msgView string
-	icon := "📢"
+	icon := ">>>"
 	msgColor := special
 
 	if m.isError {
-		icon = "❌"
+		icon = "[!]"
 		msgColor = danger
 	}
 
@@ -513,11 +513,15 @@ func (m Model) renderGameOver(l layout) string {
 		BorderForeground(danger).
 		Foreground(danger).
 		Align(lipgloss.Center).
-		Padding(2).
+		Padding(1).
 		Width(l.gameOverWidth)
 
+	// Sprite de morte centralizado
+	deadSprite := GetSpriteForState(m.tama, m.frame)
+
 	content := fmt.Sprintf(
-		"💀 GAME OVER 💀\n\n%s partiu dessa para melhor...\n\n(Pressione Ctrl+C para sair)",
+		"--- GAME OVER ---\n\n%s\n\n%s partiu dessa para melhor...\n\n(Pressione Ctrl+C para sair)",
+		deadSprite,
 		m.tama.Name,
 	)
 
@@ -529,74 +533,40 @@ func (m Model) renderGameOver(l layout) string {
 }
 
 func (m Model) renderAvatar(l layout) string {
-	var art string
 	var mood string
 
-	// Correção aqui: Definimos explicitamente como TerminalColor (interface)
-	// Isso permite aceitar tanto AdaptiveColor quanto Color comum.
-	var color lipgloss.TerminalColor = highlight
-
-	// Lógica de Animação e Humor
 	switch {
 	case m.tama.Dead:
-		art = "💀"
 		mood = "Morto"
-		color = danger
 	case m.tama.Sleeping:
 		mood = "Dormindo zZZ"
-		if m.frame%2 == 0 {
-			art = "💤 😴"
-		} else {
-			art = "   😪"
-		}
 	case m.tama.Depressed:
-		art = "☁️ 😢"
 		mood = "Deprimido"
-		// Agora isso funciona porque color é uma interface
-		color = lipgloss.Color("#555555")
 	case m.tama.PissedOf:
-		art = "💢 👿"
 		mood = "Furioso!"
-		color = danger
 	case m.tama.Overweight:
-		art = "🐷"
 		mood = "Sobrepeso"
-		color = warning
 	case m.tama.Underweight:
-		art = "🦴"
 		mood = "Abaixo do peso"
-		color = warning
 	case m.tama.Angry > 50:
-		art = "😠"
 		mood = "Irritado"
-		color = warning
 	case m.tama.Happiness > 80:
 		mood = "Radiante!"
-		if m.frame%4 == 0 {
-			art = "✨ 😄 ✨"
-		} else {
-			art = "   😆   "
-		}
-		color = special
 	case m.tama.Hunger < 30 || m.tama.Thirst < 30:
-		art = "🥺"
 		mood = "Carente"
-		color = warning
 	default:
 		mood = "Normal"
-		art = m.tama.Stage.Avatar(m.frame)
 	}
 
-	// Renderização
-	artRendered := lipgloss.NewStyle().Foreground(color).Bold(true).Render
+	// Sprite pixel art com half-block characters
+	spriteArt := GetSpriteForState(m.tama, m.frame)
 
 	stageInfo := fmt.Sprintf("Lv.%d %s", m.tama.Level, m.tama.Stage.String())
 
-	// Layout dentro da caixa do avatar
 	content := lipgloss.JoinVertical(
 		lipgloss.Center,
 		"\n",
-		artRendered(art),
+		spriteArt,
 		"\n",
 		lipgloss.NewStyle().Bold(true).Render(m.tama.Name),
 		lipgloss.NewStyle().Foreground(highlight).Render(stageInfo),
@@ -630,11 +600,11 @@ func (m Model) renderStats(l layout) string {
 	// Indicador de peso
 	weightStatus := ""
 	if m.tama.Overweight {
-		weightStatus = lipgloss.NewStyle().Foreground(warning).Render(" ⚠️ Sobrepeso")
+		weightStatus = lipgloss.NewStyle().Foreground(warning).Render(" [!] Sobrepeso")
 	} else if m.tama.Underweight {
-		weightStatus = lipgloss.NewStyle().Foreground(warning).Render(" ⚠️ Abaixo do peso")
+		weightStatus = lipgloss.NewStyle().Foreground(warning).Render(" [!] Abaixo do peso")
 	} else {
-		weightStatus = lipgloss.NewStyle().Foreground(special).Render(" ✓ Peso ideal")
+		weightStatus = lipgloss.NewStyle().Foreground(special).Render(" [OK] Peso ideal")
 	}
 
 	// Barra de XP

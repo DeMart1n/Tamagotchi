@@ -2,6 +2,7 @@ package ui
 
 import (
 	"Pessoal/internal/dungeon"
+	"Pessoal/internal/model"
 	"fmt"
 	"strings"
 
@@ -112,15 +113,34 @@ func (m Model) renderDungeon(l layout) string {
 	return borderStyle.Width(l.dungeonWidth).Render(content)
 }
 
-// renderDungeonIntro mostra a arte de introdução do bioma
+// renderDungeonIntro mostra a tela de entrada do bioma com pixel art de fundo.
 func (m Model) renderDungeonIntro(l layout) string {
 	d := m.dungeonGame
-	introMsg := dungeon.GetBiomeIntroMessage(d.CurrentBiome)
+	_, titleStyle := getBiomeStyle(d.CurrentBiome)
+	modifier := dungeon.ModifierForBiome(d.CurrentBiome)
 
 	var lines []string
-	lines = append(lines, introMsg)
+
+	// Cenário pixel art do bioma (pintura de fundo)
+	biomeSprite := BiomeSprite(d.CurrentBiome.String())
+	if biomeSprite != "" {
+		for _, sl := range strings.Split(biomeSprite, "\n") {
+			lines = append(lines, "  "+sl)
+		}
+	}
+
 	lines = append(lines, "")
-	lines = append(lines, "  Aperte ENTER para continuar...")
+	lines = append(lines, titleStyle.Render("  "+d.CurrentBiome.String()))
+	lines = append(lines, "")
+
+	// Efeitos do bioma com estilo
+	effects := dungeon.FormatBiomeEffects(modifier)
+	if effects != "" {
+		lines = append(lines, styleCombatLog.Render("  "+effects))
+	}
+
+	lines = append(lines, "")
+	lines = append(lines, "  Pressione ENTER para entrar...")
 
 	return strings.Join(lines, "\n")
 }
@@ -214,10 +234,27 @@ func (m Model) renderDungeonCombat(l layout, titleStyle lipgloss.Style) string {
 
 	// Inimigo
 	lines = append(lines, styleEnemyName.Render("  "+c.Enemy.Name))
-	// ASCII art
-	art := dungeon.EnemyArt(c.Enemy.Name)
-	for _, artLine := range strings.Split(art, "\n") {
-		lines = append(lines, "  "+artLine)
+
+	// Sprite do inimigo + efeito de combate lado a lado
+	sprite := EnemySprite(c.Enemy.Name)
+	effectStr := ""
+	if len(c.Log) > 0 {
+		effectType := detectCombatEffect(c.Log)
+		if effectType != "" {
+			effectStr = CombatEffect(effectType)
+		}
+	}
+
+	if effectStr != "" {
+		// Junta sprite (esquerda) + espaço + efeito (direita)
+		combined := lipgloss.JoinHorizontal(lipgloss.Top, sprite, "  ", effectStr)
+		for _, cl := range strings.Split(combined, "\n") {
+			lines = append(lines, "  "+cl)
+		}
+	} else {
+		for _, spriteLine := range strings.Split(sprite, "\n") {
+			lines = append(lines, "  "+spriteLine)
+		}
 	}
 
 	// HP do inimigo
@@ -287,6 +324,12 @@ func (m Model) renderDungeonRest(l layout, titleStyle lipgloss.Style) string {
 	lines = append(lines, m.renderRoomProgress())
 	lines = append(lines, "")
 	lines = append(lines, titleStyle.Render("  "+title))
+	restSprite := ItemSprite("rest")
+	if restSprite != "" {
+		for _, sl := range strings.Split(restSprite, "\n") {
+			lines = append(lines, "  "+sl)
+		}
+	}
 	if room != nil && room.Description != "" {
 		lines = append(lines, styleCombatLog.Render("  "+room.Description))
 	}
@@ -308,6 +351,12 @@ func (m Model) renderDungeonShop(l layout, titleStyle lipgloss.Style) string {
 
 	var lines []string
 	lines = append(lines, titleStyle.Render("  Loja de Pocoes"))
+	shopSprite := ItemSprite("shop")
+	if shopSprite != "" {
+		for _, sl := range strings.Split(shopSprite, "\n") {
+			lines = append(lines, "  "+sl)
+		}
+	}
 	lines = append(lines, "")
 	lines = append(lines, fmt.Sprintf("  Ouro: %d", d.Inv.Gold))
 	lines = append(lines, "")
@@ -341,6 +390,12 @@ func (m Model) renderDungeonTreasure(l layout, titleStyle lipgloss.Style) string
 	lines = append(lines, m.renderRoomProgress())
 	lines = append(lines, "")
 	lines = append(lines, titleStyle.Render("  Bau do Tesouro!"))
+	chestSprite := ItemSprite("chest")
+	if chestSprite != "" {
+		for _, sl := range strings.Split(chestSprite, "\n") {
+			lines = append(lines, "  "+sl)
+		}
+	}
 	lines = append(lines, "")
 	lines = append(lines, styleCombatLog.Render("  "+d.Message))
 
@@ -380,14 +435,27 @@ func (m Model) renderDungeonFloorEnd(l layout, titleStyle lipgloss.Style) string
 func (m Model) renderDungeonVictory(l layout, titleStyle lipgloss.Style) string {
 	d := m.dungeonGame
 
+	victoryTitle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FFD700")).
+		Bold(true)
+	rewardStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#73F59F"))
+
 	var lines []string
 	lines = append(lines, "")
-	lines = append(lines, titleStyle.Render("  VITORIA!"))
+	lines = append(lines, victoryTitle.Render("  === VITORIA! ==="))
 	lines = append(lines, "")
-	lines = append(lines, "  O Dragao Anciao foi derrotado!")
+	victorySprite := ItemSprite("victory")
+	if victorySprite != "" {
+		for _, sl := range strings.Split(victorySprite, "\n") {
+			lines = append(lines, "      "+sl)
+		}
+	}
 	lines = append(lines, "")
-	lines = append(lines, fmt.Sprintf("  XP total: +%d", d.TotalXP))
-	lines = append(lines, fmt.Sprintf("  Ouro total: +%d", d.TotalGold))
+	lines = append(lines, victoryTitle.Render("  O Dragao Anciao foi derrotado!"))
+	lines = append(lines, "")
+	lines = append(lines, rewardStyle.Render(fmt.Sprintf("  + %d XP", d.TotalXP)))
+	lines = append(lines, rewardStyle.Render(fmt.Sprintf("  + %d Ouro", d.TotalGold)))
 	lines = append(lines, "")
 	lines = append(lines, "  Aperte Enter para voltar.")
 
@@ -397,11 +465,28 @@ func (m Model) renderDungeonVictory(l layout, titleStyle lipgloss.Style) string 
 func (m Model) renderDungeonDefeat(l layout) string {
 	d := m.dungeonGame
 
+	defeatTitle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FF5F87")).
+		Bold(true)
+	lossStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#888888")).
+		Italic(true)
+
 	var lines []string
 	lines = append(lines, "")
-	lines = append(lines, lipgloss.NewStyle().Foreground(lipgloss.Color("#FF5F87")).Bold(true).Render("  DERROTA..."))
+	lines = append(lines, defeatTitle.Render("  === DERROTA ==="))
 	lines = append(lines, "")
-	lines = append(lines, styleCombatLog.Render("  "+d.Message))
+	defeatSprite := ItemSprite("defeat")
+	if defeatSprite != "" {
+		for _, sl := range strings.Split(defeatSprite, "\n") {
+			lines = append(lines, "      "+sl)
+		}
+	}
+	lines = append(lines, "")
+	lines = append(lines, lossStyle.Render("  "+d.Message))
+	if d.TotalXP > 0 {
+		lines = append(lines, lossStyle.Render(fmt.Sprintf("  XP recuperado: %d", d.TotalXP/2)))
+	}
 	lines = append(lines, "")
 	lines = append(lines, "  Aperte Enter para voltar.")
 
@@ -478,6 +563,31 @@ func (m Model) biomeAttributesSummary(biome dungeon.Biome) string {
 	}
 
 	return strings.Join(effects, " | ")
+}
+
+// detectCombatEffect analisa os logs de combate e retorna o efeito visual adequado.
+func detectCombatEffect(logs []string) string {
+	for _, log := range logs {
+		switch {
+		case strings.Contains(log, "CRITICO"):
+			return "critical"
+		case strings.Contains(log, "atacou") || strings.Contains(log, "dano em"):
+			return "attack"
+		case strings.Contains(log, "defender"):
+			return "defend"
+		case strings.Contains(log, "Recuperou") || strings.Contains(log, "Cura"):
+			return "heal"
+		case strings.Contains(log, "Usou") && strings.Contains(log, "!"):
+			return "skill"
+		case strings.Contains(log, "fugiu"):
+			return "flee"
+		case strings.Contains(log, "Nao conseguiu fugir"):
+			return "miss"
+		case strings.Contains(log, "derrotado"):
+			return "damage"
+		}
+	}
+	return ""
 }
 
 func (m Model) renderRoomProgress() string {
