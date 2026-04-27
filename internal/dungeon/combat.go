@@ -27,11 +27,12 @@ const (
 
 // Combat motor de combate por turnos.
 type Combat struct {
-	Player    *CombatStats
-	Enemy     *Enemy
-	Biome     Biome
-	Modifier  BiomeModifier
-	State     CombatState
+	Player        *CombatStats // Stats com modificadores de bioma
+	OriginalStats *CombatStats // Referência aos stats originais para sincronizar HP
+	Enemy         *Enemy
+	Biome         Biome
+	Modifier      BiomeModifier
+	State         CombatState
 	Log       []string
 	Turn      int
 	Defending bool // Jogador está defendendo neste turno
@@ -45,14 +46,20 @@ type Combat struct {
 // NewCombat cria um novo combate.
 func NewCombat(player *CombatStats, enemy *Enemy, biome Biome) *Combat {
 	modifier := ModifierForBiome(biome)
+
+	// Criamos uma cópia dos stats e aplicamos os modificadores de bioma
+	// Isso garante que ATK/DEF/VEL/LUCK do bioma funcionem no combate
+	statsWithMod := player.ApplyBiomeModifiers(modifier)
+
 	return &Combat{
-		Player:   player,
-		Enemy:    enemy,
-		Biome:    biome,
-		Modifier: modifier,
-		State:    CombatChoosing,
-		Log:      []string{},
-		Turn:     1,
+		Player:        &statsWithMod,
+		OriginalStats: player, // Guardamos o original para devolver o HP/MP depois
+		Enemy:         enemy,
+		Biome:         biome,
+		Modifier:      modifier,
+		State:         CombatChoosing,
+		Log:           []string{},
+		Turn:          1,
 	}
 }
 
@@ -67,10 +74,12 @@ func (c *Combat) ExecuteAction(action CombatAction, itemBag *ItemBag, tama *mode
 	c.Defending = false
 	c.applyBiomeTurnEffects()
 
+	// Se morreu pelo bioma, encerra antes da ação
 	if c.Player.HPCurrent <= 0 {
 		c.Player.HPCurrent = 0
 		c.Lost = true
 		c.Log = append(c.Log, "Voce sucumbiu aos efeitos do bioma...")
+		c.syncStats()
 		c.State = CombatResolved
 		return
 	}
@@ -78,55 +87,48 @@ func (c *Combat) ExecuteAction(action CombatAction, itemBag *ItemBag, tama *mode
 	if c.FrozenFor > 0 {
 		c.FrozenFor--
 		c.Log = append(c.Log, "Voce esta congelado e perdeu o turno!")
-		c.enemyTurn()
-		if c.Player.HPCurrent <= 0 {
-			c.Player.HPCurrent = 0
-			c.Lost = true
-			c.Log = append(c.Log, "Voce foi derrotado...")
+	} else {
+		switch action {
+		case ActionAtacar:
+			c.playerAttack()
+		case ActionDefender:
+			c.Defending = true
+			c.Log = append(c.Log, "Voce se preparou para defender!")
+		case ActionItem:
+			c.useItem(itemBag, actionIndex)
+		case ActionSkill:
+			c.executeSkill(tama, actionIndex)
+		case ActionFugir:
+			c.tryFlee()
+			if c.Fled {
+				c.syncStats()
+				c.State = CombatResolved
+				return
+			}
 		}
-		c.Turn++
-		c.State = CombatResolved
-		return
 	}
 
-	switch action {
-	case ActionAtacar:
-		c.playerAttack()
-	case ActionDefender:
-		c.Defending = true
-		c.Log = append(c.Log, "Voce se preparou para defender!")
-	case ActionItem:
-		c.useItem(itemBag, actionIndex)
-	case ActionSkill:
-		c.executeSkill(tama, actionIndex)
-	case ActionFugir:
-		c.tryFlee()
-	}
-
-	if c.Fled {
-		c.State = CombatResolved
-		return
-	}
-
-	// Verifica morte do inimigo
+	// Verifica morte do inimigo antes dele atacar
 	if c.Enemy.HPCurrent <= 0 {
 		c.Enemy.HPCurrent = 0
 		c.Won = true
 		c.Log = append(c.Log, fmt.Sprintf("%s foi derrotado!", c.Enemy.Name))
+		c.syncStats()
 		c.State = CombatResolved
 		return
 	}
 
-	// Turno do inimigo
+	// Turno do inimigo (sempre acontece se ele estiver vivo)
 	c.enemyTurn()
 
-	// Verifica morte do jogador
+	// Verifica morte do jogador após ataque do inimigo
 	if c.Player.HPCurrent <= 0 {
 		c.Player.HPCurrent = 0
 		c.Lost = true
 		c.Log = append(c.Log, "Voce foi derrotado...")
 	}
 
+	c.syncStats()
 	c.Turn++
 	c.State = CombatResolved
 
@@ -134,6 +136,13 @@ func (c *Combat) ExecuteAction(action CombatAction, itemBag *ItemBag, tama *mode
 	if c.ATKBuff > 0 {
 		c.Player.Ataque -= c.ATKBuff
 		c.ATKBuff = 0
+	}
+}
+
+func (c *Combat) syncStats() {
+	if c.OriginalStats != nil {
+		c.OriginalStats.HPCurrent = c.Player.HPCurrent
+		c.OriginalStats.MPCurrent = c.Player.MPCurrent
 	}
 }
 
@@ -204,6 +213,9 @@ func (c *Combat) enemyTurn() {
 		dmg += (dmg * c.Modifier.PlayerFireVulnerability) / 100
 	}
 
+	// TESTE!!! - Forçando dano alto para validar morte e reset
+	dmg = 100
+
 	critChance := 5 + c.Modifier.EnemyLuckBonusPct
 	if rand.Intn(100) < critChance {
 		dmg = int(float64(dmg) * 1.5)
@@ -222,16 +234,30 @@ func (c *Combat) enemyTurn() {
 }
 
 func (c *Combat) applyBiomeTurnEffects() {
-	if c.Modifier.PlayerFireDotPctMaxHP <= 0 {
-		return
+	// Efeito de Dano contínuo (fogo/calor)
+	if c.Modifier.PlayerFireDotPctMaxHP > 0 {
+		dot := (c.Player.HPMax * c.Modifier.PlayerFireDotPctMaxHP) / 100
+		if dot < 1 {
+			dot = 1
+		}
+		c.Player.HPCurrent -= dot
+		c.Log = append(c.Log, fmt.Sprintf("O calor do bioma causa %d de dano continuo!", dot))
 	}
 
-	dot := (c.Player.HPMax * c.Modifier.PlayerFireDotPctMaxHP) / 100
-	if dot < 1 {
-		dot = 1
+	// Novo: Regen ou Degen flat do bioma
+	if c.Modifier.PlayerHPRegenBonus != 0 {
+		c.Player.HPCurrent += c.Modifier.PlayerHPRegenBonus
+		if c.Modifier.PlayerHPRegenBonus > 0 {
+			c.Log = append(c.Log, fmt.Sprintf("A aura do bioma recupera %d HP!", c.Modifier.PlayerHPRegenBonus))
+		} else {
+			c.Log = append(c.Log, fmt.Sprintf("O ambiente hostil drena %d HP!", -c.Modifier.PlayerHPRegenBonus))
+		}
 	}
-	c.Player.HPCurrent -= dot
-	c.Log = append(c.Log, fmt.Sprintf("O calor do bioma causa %d de dano continuo!", dot))
+
+	// Garante que HP não exceda Max e não fique negativo aqui (ExecuteAction trata morte)
+	if c.Player.HPCurrent > c.Player.HPMax {
+		c.Player.HPCurrent = c.Player.HPMax
+	}
 }
 
 func (c *Combat) useItem(bag *ItemBag, index int) {

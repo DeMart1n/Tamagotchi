@@ -82,3 +82,40 @@ func (cs CombatStats) ApplyEquipment(inv *Inventory) CombatStats {
 	}
 	return cs
 }
+
+// ApplyBiomeModifiers aplica os bônus/penalidades do bioma aos stats de combate.
+func (cs CombatStats) ApplyBiomeModifiers(mod BiomeModifier) CombatStats {
+	if mod.PlayerHPBonusPct != 0 {
+		bonus := (cs.HPMax * mod.PlayerHPBonusPct) / 100
+		cs.HPMax += bonus
+		cs.HPCurrent += bonus
+	}
+	if mod.PlayerATKBonusPct != 0 {
+		cs.Ataque += (cs.Ataque * mod.PlayerATKBonusPct) / 100
+	}
+	if mod.PlayerDEFBonusPct != 0 {
+		cs.Defesa += (cs.Defesa * mod.PlayerDEFBonusPct) / 100
+	}
+	if mod.PlayerVELBonusPct != 0 {
+		cs.Velocidade += (cs.Velocidade * mod.PlayerVELBonusPct) / 100
+	}
+	if mod.PlayerLuckBonusPct != 0 {
+		cs.Sorte += (cs.Sorte * mod.PlayerLuckBonusPct) / 100
+	}
+
+	// Garantir valores mínimos
+	if cs.Ataque < 1 {
+		cs.Ataque = 1
+	}
+	if cs.Defesa < 0 {
+		cs.Defesa = 0
+	}
+	if cs.Velocidade < 1 {
+		cs.Velocidade = 1
+	}
+	if cs.Sorte < 0 {
+		cs.Sorte = 0
+	}
+
+	return cs
+}
