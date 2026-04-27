@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"Pessoal/internal/dungeon"
 	"Pessoal/internal/model"
 	"fmt"
 	"math/rand"
@@ -218,19 +219,54 @@ func Tick(tama *model.Tama) {
 	}
 
 	decay := tama.Stage.DecayRate()
+	
+	// Recupera modificadores do bioma se estiver em um
+	var mod dungeon.BiomeModifier
+	if tama.CurrentBiome != "" {
+		biome := dungeon.ParseBiome(tama.CurrentBiome)
+		mod = dungeon.ModifierForBiome(biome)
+	} else {
+		// Default se não estiver em dungeon
+		mod = dungeon.BiomeModifier{
+			HungerRateMult:    1.0,
+			SleepyRateMult:    1.0,
+			HappinessRateMult: 1.0,
+		}
+	}
 
-	// Decay base (multiplicado pelo estágio)
+	// Decay base (multiplicado pelo estágio e agora pelo bioma)
 	if tama.Hunger > 0 {
-		tama.Hunger = max(tama.Hunger-decay, 0)
+		hDecay := int(float64(decay) * mod.HungerRateMult)
+		if hDecay < 1 && mod.HungerRateMult > 0 {
+			hDecay = 1
+		}
+		tama.Hunger = max(tama.Hunger-hDecay, 0)
 	}
 	if tama.Sleepy > 0 {
-		tama.Sleepy = max(tama.Sleepy-decay, 0)
+		sDecay := int(float64(decay) * mod.SleepyRateMult)
+		if sDecay < 1 && mod.SleepyRateMult > 0 {
+			sDecay = 1
+		}
+		tama.Sleepy = max(tama.Sleepy-sDecay, 0)
 	}
 	if tama.Thirst > 0 {
-		tama.Thirst = max(tama.Thirst-decay, 0)
+		// Thirst usa HungerRateMult como proxy se não tiver um específico
+		tDecay := int(float64(decay) * mod.HungerRateMult)
+		if tDecay < 1 && mod.HungerRateMult > 0 {
+			tDecay = 1
+		}
+		tama.Thirst = max(tama.Thirst-tDecay, 0)
 	}
 	if tama.Happiness > 0 {
-		tama.Happiness = max(tama.Happiness-decay, 0)
+		hapDecay := int(float64(decay) / mod.HappinessRateMult) // Se Mult > 1, decay é menor (melhor)
+		if hapDecay < 1 && mod.HappinessRateMult < 10 { // Evita 0 decay a menos que seja intencional
+			hapDecay = 1
+		}
+		
+		// Efeito adicional flat do bioma (ex: BiomeVolcanic tem HappinessPenaltyTick)
+		hapDecay += mod.HappinessPenaltyTick
+		
+		tama.Happiness = max(tama.Happiness-hapDecay, 0)
 	}
 
 	// Interações entre stats

@@ -87,3 +87,43 @@ func (t *Tama) AddXP(amount int) bool {
 	t.Stage = StageForLevel(t.Level)
 	return leveled
 }
+
+// Reset restaura o Tama para o estado inicial de um novo jogo.
+func (t *Tama) Reset(name string) {
+	t.Name = name
+	t.Hunger = MaxHunger
+	t.Thirst = MaxThirst
+	t.Sleepy = MaxSleepy
+	t.Happiness = MaxHappiness
+	t.Angry = MinAngry
+	t.Weight = NormalWeightMin + 10
+	t.Sleeping = false
+	t.Dead = false
+	t.Depressed = false
+	t.PissedOf = false
+	t.Overweight = false
+	t.Underweight = false
+	t.LastSaved = time.Now()
+
+	t.XP = 0
+	t.Level = 1
+	t.Stage = StageBaby
+
+	t.TotalFeeds = 0
+	t.TotalWaters = 0
+	t.TotalPets = 0
+	t.TotalSleeps = 0
+	t.TotalExercises = 0
+	t.TotalAnnoys = 0
+	t.TotalTicks = 0
+
+	t.Achievements = []Achievement{}
+	t.Inventory = nil
+	t.TotalDungeonRuns = 0
+	t.TotalBossesDefeated = 0
+	t.CurrentBiome = ""
+
+	t.MP = 20
+	t.MPMax = 20
+	t.SkillsKnown = []string{}
+}

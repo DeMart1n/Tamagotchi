@@ -290,10 +290,14 @@ func (d *DungeonRun) handleItemChoice(input string) {
 
 func (d *DungeonRun) updateCombatMessage() {
 	if len(d.Combat.Log) > 0 {
-		d.Message = d.Combat.Log[0]
-		if len(d.Combat.Log) > 1 {
-			d.SubMessage = d.Combat.Log[1]
+		// Pega as últimas duas mensagens para garantir que o ataque do inimigo apareça
+		// mesmo se houver mensagens de bioma ou ação do jogador antes.
+		n := len(d.Combat.Log)
+		if n >= 2 {
+			d.Message = d.Combat.Log[n-2]
+			d.SubMessage = d.Combat.Log[n-1]
 		} else {
+			d.Message = d.Combat.Log[0]
 			d.SubMessage = ""
 		}
 	}
@@ -336,13 +340,10 @@ func (d *DungeonRun) handleCombatResult(input string) {
 		d.Message = "Fugiu do combate!"
 		d.advanceAfterRoom()
 	} else if d.Combat.Lost {
-		// Derrota — XP parcial
-		partialXP := d.TotalXP / 2
-		if partialXP > 0 {
-			d.Tama.AddXP(partialXP)
-		}
+		// Derrota — Morte Permanente
+		d.Tama.Dead = true
 		d.Phase = PhaseDerrota
-		d.Message = fmt.Sprintf("Voce foi derrotado! Recebeu %d XP parcial.", partialXP)
+		d.Message = "Você foi derrotado na masmorra e não sobreviveu..."
 		d.Tama.TotalDungeonRuns++
 	}
 }

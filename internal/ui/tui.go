@@ -183,6 +183,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
+		if m.tama.Dead {
+			if strings.ToLower(msg.String()) == "r" {
+				name := m.tama.Name
+				m.tama.Reset(name)
+				m.message = "* Vida nova para " + name + "! Cuide bem dele."
+				m.isError = false
+				m.dungeonInv = dungeon.NewInventory() // Limpa inventário da dungeon
+				persistence.Delete()                 // Remove save antigo
+				persistence.Save(m.tama)             // Cria save novo limpo
+				return m, nil
+			}
+		}
+
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
 			if m.gameMode == ModeDungeon {
@@ -204,6 +217,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case tea.KeyEnter:
+			if m.tama.Dead {
+				name := m.tama.Name
+				m.tama.Reset(name)
+				m.message = "* " + name + " renasceu! Cuide bem dele."
+				m.isError = false
+				m.dungeonInv = dungeon.NewInventory()
+				persistence.Delete()
+				persistence.Save(m.tama)
+				return m, nil
+			}
+
 			input := strings.TrimSpace(strings.ToLower(m.textInput.Value()))
 			m.textInput.SetValue("")
 
@@ -420,7 +444,7 @@ func (m Model) View() string {
 	}
 
 	if m.tama.Dead {
-		return m.renderGameOver(l)
+		// Se estiver morto, apenas renderiza normalmente, o sprite de morto será exibido no avatar
 	}
 
 	// 1. Cabeçalho
@@ -504,31 +528,6 @@ func (m Model) View() string {
 		lipgloss.Center,
 		lipgloss.Center,
 		appView,
-	)
-}
-
-func (m Model) renderGameOver(l layout) string {
-	styleDead := lipgloss.NewStyle().
-		Border(lipgloss.DoubleBorder()).
-		BorderForeground(danger).
-		Foreground(danger).
-		Align(lipgloss.Center).
-		Padding(1).
-		Width(l.gameOverWidth)
-
-	// Sprite de morte centralizado
-	deadSprite := GetSpriteForState(m.tama, m.frame)
-
-	content := fmt.Sprintf(
-		"--- GAME OVER ---\n\n%s\n\n%s partiu dessa para melhor...\n\n(Pressione Ctrl+C para sair)",
-		deadSprite,
-		m.tama.Name,
-	)
-
-	return lipgloss.Place(
-		m.width, m.height,
-		lipgloss.Center, lipgloss.Center,
-		styleDead.Render(content),
 	)
 }
 
