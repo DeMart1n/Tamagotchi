@@ -71,11 +71,13 @@ func main() {
 	}
 
 	var tama *model.Tama
+	var hasSave bool
 
 	if persistence.Exists() {
 		loaded, err := persistence.Load()
 		if err == nil && !loaded.Dead {
 			tama = loaded
+			hasSave = true
 			fmt.Println("💾 Save carregado! Bem-vindo de volta,", tama.Name+"!")
 		}
 	}
@@ -113,7 +115,7 @@ func main() {
 		}
 	}
 
-	p := tea.NewProgram(ui.InitialModel(tama), tea.WithAltScreen())
+	p := tea.NewProgram(ui.InitialModel(tama, hasSave), tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Erro ao iniciar o programa: %v\n", err)

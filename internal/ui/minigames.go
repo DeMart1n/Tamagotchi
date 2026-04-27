@@ -14,10 +14,14 @@ import (
 type GameMode int
 
 const (
-	ModeNormal GameMode = iota
-	ModeGuess
-	ModeReact
-	ModeDungeon
+	ModeNormal  GameMode = iota
+	ModeGuess            // Minigame: number guess
+	ModeReact            // Minigame: reaction time
+	ModeDungeon          // Dungeon RPG mode
+	ModeTitle            // Title / start screen
+	ModePause            // Pause menu
+	ModeHelp             // Help screen
+	ModeGameOver         // Full-screen game over
 )
 
 // --- Jogo de Adivinhação ---

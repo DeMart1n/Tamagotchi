@@ -86,9 +86,16 @@ type Model struct {
 	// Dungeon
 	dungeonGame *dungeon.DungeonRun
 	dungeonInv  *dungeon.Inventory
+
+	// Title screen
+	hasSave  bool // true when a valid save was loaded at startup
+	titleSub int  // titleSubMain or titleSubName
+
+	// Pause screen
+	pauseCursor int // selected option index (0-2)
 }
 
-func InitialModel(tama *model.Tama) Model {
+func InitialModel(tama *model.Tama, hasSave bool) Model {
 	ti := textinput.New()
 	ti.Placeholder = "Comandos: feed, water, pet, sleep, exercise, annoy..."
 	ti.Focus()
@@ -107,6 +114,8 @@ func InitialModel(tama *model.Tama) Model {
 		message:    "* Ola! Cuide bem do " + tama.Name + "!",
 		frame:      0,
 		dungeonInv: inv,
+		gameMode:   ModeTitle,
+		hasSave:    hasSave,
 	}
 }
 
@@ -131,10 +140,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tickCmd()
 
 	case lifeCycleTickMsg:
+		// Don't run lifecycle logic while on non-gameplay screens
+		if m.gameMode == ModeTitle || m.gameMode == ModeGameOver {
+			return m, lifeCycleTickCmd()
+		}
 		Tick(m.tama)
 		if m.tama.Dead {
-			m.message = "[X] " + m.tama.Name + " nao sobreviveu..."
-			return m, nil
+			m.gameMode = ModeGameOver
+			return m, lifeCycleTickCmd()
 		}
 		if m.activeEvent != nil {
 			m.eventTimer--
@@ -183,17 +196,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
-		if m.tama.Dead {
-			if strings.ToLower(msg.String()) == "r" {
-				name := m.tama.Name
-				m.tama.Reset(name)
-				m.message = "* Vida nova para " + name + "! Cuide bem dele."
-				m.isError = false
-				m.dungeonInv = dungeon.NewInventory() // Limpa inventário da dungeon
-				persistence.Delete()                 // Remove save antigo
-				persistence.Save(m.tama)             // Cria save novo limpo
-				return m, nil
-			}
+		// --- Title Screen ---
+		if m.gameMode == ModeTitle {
+			return m.handleTitleKey(msg)
+		}
+
+		// --- Game Over Screen ---
+		if m.gameMode == ModeGameOver {
+			return m.handleGameOverKey(msg)
+		}
+
+		// --- Pause Screen ---
+		if m.gameMode == ModePause {
+			return m.handlePauseKey(msg)
+		}
+
+		// --- Help Screen ---
+		if m.gameMode == ModeHelp {
+			// Any key returns to pause
+			m.gameMode = ModePause
+			return m, nil
 		}
 
 		switch msg.Type {
@@ -212,22 +234,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.message = "[>] Saiu do mini-game."
 				return m, nil
 			}
-			m.saveDungeonInventory()
-			persistence.Save(m.tama)
-			return m, tea.Quit
+			// ESC in normal mode → pause screen (instead of quitting directly)
+			m.gameMode = ModePause
+			m.pauseCursor = 0
+			return m, nil
 
 		case tea.KeyEnter:
-			if m.tama.Dead {
-				name := m.tama.Name
-				m.tama.Reset(name)
-				m.message = "* " + name + " renasceu! Cuide bem dele."
-				m.isError = false
-				m.dungeonInv = dungeon.NewInventory()
-				persistence.Delete()
-				persistence.Save(m.tama)
-				return m, nil
-			}
-
 			input := strings.TrimSpace(strings.ToLower(m.textInput.Value()))
 			m.textInput.SetValue("")
 
@@ -288,11 +300,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				done := m.dungeonGame.HandleInput(input)
 				if done {
 					m.saveDungeonInventory()
-					m.gameMode = ModeNormal
+					if m.tama.Dead {
+						m.gameMode = ModeGameOver
+					} else {
+						m.gameMode = ModeNormal
+					}
 					m.dungeonGame = nil
 					m.message = "[>] Voltou da masmorra."
-					if newAch := model.CheckAchievements(m.tama); len(newAch) > 0 {
-						m.message += " [CONQUISTA] " + strings.Join(newAch, ", ")
+					if !m.tama.Dead {
+						if newAch := model.CheckAchievements(m.tama); len(newAch) > 0 {
+							m.message += " [CONQUISTA] " + strings.Join(newAch, ", ")
+						}
 					}
 				}
 				return m, nil
@@ -328,6 +346,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			if m.tama.Dead {
+				m.gameMode = ModeGameOver
 				return m, nil
 			}
 
@@ -384,6 +403,8 @@ func (m *Model) handleCommand(cmd string) tea.Cmd {
 		m.gameMode = ModeDungeon
 		m.dungeonGame = dungeon.NewDungeonRun(m.tama, m.dungeonInv)
 		m.message = "[DUNGEON] Entrando na Masmorra..."
+	case "help", "h":
+		m.gameMode = ModeHelp
 	default:
 		// Comando secreto: setlvl <numero>
 		if strings.HasPrefix(cmd, "setlvl ") {
@@ -400,10 +421,137 @@ func (m *Model) handleCommand(cmd string) tea.Cmd {
 			m.message = fmt.Sprintf("Level setado para %d (%s)", lvl, m.tama.Stage.String())
 			return nil
 		}
-		m.message = fmt.Sprintf("[?] Comando '%s' desconhecido.", cmd)
+		m.message = fmt.Sprintf("[?] Comando '%s' desconhecido. Digite 'help' para ver os comandos.", cmd)
 		m.isError = true
 	}
 	return nil
+}
+
+// handleTitleKey handles keyboard input on the title screen.
+func (m Model) handleTitleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch m.titleSub {
+	case titleSubName:
+		// Name entry sub-screen
+		switch msg.Type {
+		case tea.KeyEsc:
+			m.titleSub = titleSubMain
+			m.textInput.SetValue("")
+			m.textInput.Placeholder = "Comandos: feed, water, pet, sleep, exercise, annoy..."
+			return m, nil
+		case tea.KeyEnter:
+			name := strings.TrimSpace(m.textInput.Value())
+			if name == "" {
+				name = "Pochi"
+			}
+			m.tama.Reset(name)
+			m.message = "* Bem-vindo! Cuide bem do " + name + "!"
+			m.gameMode = ModeNormal
+			m.hasSave = false
+			m.textInput.SetValue("")
+			m.textInput.Placeholder = "Comandos: feed, water, pet, sleep, exercise, annoy..."
+			persistence.Delete()
+			persistence.Save(m.tama)
+			var c tea.Cmd
+			m.textInput, c = m.textInput.Update(msg)
+			return m, c
+		}
+		// Let text input handle the rest
+		var c tea.Cmd
+		m.textInput, c = m.textInput.Update(msg)
+		return m, c
+
+	default:
+		// Main title sub-screen
+		key := strings.ToLower(msg.String())
+		switch {
+		case msg.Type == tea.KeyEsc || msg.Type == tea.KeyCtrlC:
+			persistence.Save(m.tama)
+			return m, tea.Quit
+		case msg.Type == tea.KeyEnter:
+			if m.hasSave {
+				// Continue existing game
+				m.gameMode = ModeNormal
+				m.message = "* Bem-vindo de volta, " + m.tama.Name + "!"
+			} else {
+				// No save → go straight to name entry
+				m.titleSub = titleSubName
+				m.textInput.SetValue("")
+				m.textInput.Placeholder = "Nome do seu Tamagotchi..."
+				m.textInput.Focus()
+			}
+			return m, nil
+		case key == "n":
+			// New game (always available)
+			m.titleSub = titleSubName
+			m.textInput.SetValue("")
+			m.textInput.Placeholder = "Nome do seu Tamagotchi..."
+			m.textInput.Focus()
+			return m, nil
+		}
+		return m, nil
+	}
+}
+
+// handlePauseKey handles keyboard input on the pause menu.
+func (m Model) handlePauseKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.Type {
+	case tea.KeyEsc:
+		m.gameMode = ModeNormal
+		return m, nil
+	case tea.KeyUp:
+		m.pauseCursor = (m.pauseCursor - 1 + len(pauseOptions)) % len(pauseOptions)
+		return m, nil
+	case tea.KeyDown:
+		m.pauseCursor = (m.pauseCursor + 1) % len(pauseOptions)
+		return m, nil
+	case tea.KeyEnter:
+		return m.executePauseOption()
+	}
+	// Number keys
+	key := msg.String()
+	if len(key) == 1 && key[0] >= '1' && key[0] <= '3' {
+		m.pauseCursor = int(key[0]-'1')
+		return m.executePauseOption()
+	}
+	return m, nil
+}
+
+func (m Model) executePauseOption() (tea.Model, tea.Cmd) {
+	switch m.pauseCursor {
+	case 0: // Retomar
+		m.gameMode = ModeNormal
+	case 1: // Ajuda
+		m.gameMode = ModeHelp
+	case 2: // Sair
+		m.saveDungeonInventory()
+		persistence.Save(m.tama)
+		return m, tea.Quit
+	}
+	return m, nil
+}
+
+// handleGameOverKey handles keyboard input on the game over screen.
+func (m Model) handleGameOverKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	key := strings.ToLower(msg.String())
+	switch {
+	case msg.Type == tea.KeyEsc || msg.Type == tea.KeyCtrlC:
+		persistence.Delete()
+		return m, tea.Quit
+	case key == "r" || msg.Type == tea.KeyEnter:
+		name := m.tama.Name
+		m.tama.Reset(name)
+		m.message = "* " + name + " renasceu! Cuide bem dele."
+		m.isError = false
+		m.dungeonInv = dungeon.NewInventory()
+		persistence.Delete()
+		persistence.Save(m.tama)
+		// Go back to title screen (not directly into game)
+		m.gameMode = ModeTitle
+		m.titleSub = titleSubMain
+		m.hasSave = false
+		return m, nil
+	}
+	return m, nil
 }
 
 func (m *Model) saveDungeonInventory() {
@@ -437,14 +585,22 @@ func (m *Model) renderAchievementsList() string {
 func (m Model) View() string {
 	l := computeLayout(m.width, m.height)
 
+	// Full-screen override modes (handle before tooSmall check so they can show their own messages)
+	switch m.gameMode {
+	case ModeTitle:
+		return m.renderTitle(l)
+	case ModePause:
+		return m.renderPauseScreen(l)
+	case ModeHelp:
+		return m.renderHelpScreen(l)
+	case ModeGameOver:
+		return m.renderGameOver(l)
+	}
+
 	if l.tooSmall {
 		msg := lipgloss.NewStyle().Foreground(warning).Bold(true).
 			Render(fmt.Sprintf("Terminal muito pequeno (%dx%d)\nMínimo: %dx%d", m.width, m.height, minWidth, minHeight))
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, msg)
-	}
-
-	if m.tama.Dead {
-		// Se estiver morto, apenas renderiza normalmente, o sprite de morto será exibido no avatar
 	}
 
 	// 1. Cabeçalho
@@ -507,7 +663,7 @@ func (m Model) View() string {
 	case ModeDungeon:
 		helpText = "ESC: Sair da masmorra • Digite o número da opção"
 	default:
-		helpText = "ESC: Sair • (f)eed (w)ater (p)et (s)leep (e)xercise (a)nnoy • play • dungeon • ach"
+		helpText = "ESC: Pausar • (f)eed (w)ater (p)et (s)leep (e)xercise (a)nnoy • play • dungeon • help • ach"
 	}
 	helpView := styleHelp.Render(helpText)
 
