@@ -141,7 +141,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case lifeCycleTickMsg:
 		// Don't run lifecycle logic while on non-gameplay screens
-		if m.gameMode == ModeTitle || m.gameMode == ModeGameOver {
+		if m.gameMode == ModeTitle || m.gameMode == ModeGameOver ||
+			m.gameMode == ModePause || m.gameMode == ModeHelp {
 			return m, lifeCycleTickCmd()
 		}
 		Tick(m.tama)
@@ -421,7 +422,7 @@ func (m *Model) handleCommand(cmd string) tea.Cmd {
 			m.message = fmt.Sprintf("Level setado para %d (%s)", lvl, m.tama.Stage.String())
 			return nil
 		}
-		m.message = fmt.Sprintf("[?] Comando '%s' desconhecido. Digite 'help' para ver os comandos.", cmd)
+		m.message = fmt.Sprintf("[?] Comando '%s' desconhecido. Digite 'help' ou 'h' para ver os comandos.", cmd)
 		m.isError = true
 	}
 	return nil
@@ -545,10 +546,10 @@ func (m Model) handleGameOverKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.dungeonInv = dungeon.NewInventory()
 		persistence.Delete()
 		persistence.Save(m.tama)
-		// Go back to title screen (not directly into game)
+		// Go back to title screen (not directly into game); hasSave=true because we just saved
 		m.gameMode = ModeTitle
 		m.titleSub = titleSubMain
-		m.hasSave = false
+		m.hasSave = true
 		return m, nil
 	}
 	return m, nil

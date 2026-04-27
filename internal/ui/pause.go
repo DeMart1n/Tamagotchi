@@ -14,6 +14,13 @@ var pauseOptions = []string{
 	"Sair (salva automaticamente)",
 }
 
+// pauseBox dimensions: 60% of content width, clamped between 40 and 70 characters.
+const (
+	pauseBoxWidthPercent = 60
+	pauseBoxMinWidth     = 40
+	pauseBoxMaxWidth     = 70
+)
+
 var (
 	stylePauseBox = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
@@ -69,7 +76,7 @@ func (m Model) renderPauseScreen(l layout) string {
 		hint,
 	)
 
-	box := stylePauseBox.Width(clampInt(l.contentWidth*60/100, 40, 70)).Render(content)
+	box := stylePauseBox.Width(clampInt(l.contentWidth*pauseBoxWidthPercent/100, pauseBoxMinWidth, pauseBoxMaxWidth)).Render(content)
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box)
 }
 
