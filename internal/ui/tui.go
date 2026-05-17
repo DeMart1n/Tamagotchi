@@ -86,6 +86,9 @@ type Model struct {
 	// Dungeon
 	dungeonGame *dungeon.DungeonRun
 	dungeonInv  *dungeon.Inventory
+
+	// Quests
+	showingQuests bool
 }
 
 func InitialModel(tama *model.Tama) Model {
@@ -136,6 +139,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.message = "[X] " + m.tama.Name + " nao sobreviveu..."
 			return m, nil
 		}
+
+		// Atualiza quests
+		model.ResetDailyQuests(m.tama)
+		if newQuests := model.UpdateQuestProgress(m.tama); len(newQuests) > 0 {
+			m.message = "[MISSÃO] Completadas: " + strings.Join(newQuests, ", ")
+			return m, lifeCycleTickCmd()
+		}
+
 		if m.activeEvent != nil {
 			m.eventTimer--
 			if m.eventTimer <= 0 {
@@ -341,6 +352,13 @@ func (m *Model) handleCommand(cmd string) tea.Cmd {
 			m.tama.TotalTicks, m.tama.Stage.String())
 	case "achievements", "ach":
 		m.message = m.renderAchievementsList()
+	case "quests", "q":
+		m.showingQuests = !m.showingQuests
+		if m.showingQuests {
+			m.message = "[>] Painel de missões aberto. Digite 'claim <id>' para reivindicar."
+		} else {
+			m.message = "[>] Painel de missões fechado."
+		}
 	case "play guess", "guess":
 		m.gameMode = ModeGuess
 		m.guessGame = NewGuessGame()
@@ -361,6 +379,22 @@ func (m *Model) handleCommand(cmd string) tea.Cmd {
 		m.dungeonGame = dungeon.NewDungeonRun(m.tama, m.dungeonInv)
 		m.message = "[DUNGEON] Entrando na Masmorra..."
 	default:
+		// Comando: claim <quest_id>
+		if strings.HasPrefix(cmd, "claim ") {
+			questID := strings.TrimPrefix(cmd, "claim ")
+			questID = strings.TrimSpace(questID)
+			msg, ok := model.ClaimReward(m.tama, questID, func(g int) {
+				if m.dungeonInv != nil {
+					m.dungeonInv.Gold += g
+				}
+			})
+			m.message = msg
+			if !ok {
+				m.isError = true
+			}
+			return nil
+		}
+
 		// Comando secreto: setlvl <numero>
 		if strings.HasPrefix(cmd, "setlvl ") {
 			lvlStr := strings.TrimPrefix(cmd, "setlvl ")
@@ -448,6 +482,8 @@ func (m Model) View() string {
 			Width(l.gameBoxWidth).
 			Render(m.reactGame.RenderView())
 		mainContent = gameView
+	} else if m.showingQuests {
+		mainContent = renderQuestPanel(m.tama)
 	} else {
 		mainContent = lipgloss.JoinHorizontal(
 			lipgloss.Top,
@@ -483,7 +519,11 @@ func (m Model) View() string {
 	case ModeDungeon:
 		helpText = "ESC: Sair da masmorra • Digite o número da opção"
 	default:
-		helpText = "ESC: Sair • (f)eed (w)ater (p)et (s)leep (e)xercise (a)nnoy • play • dungeon • ach"
+		if m.showingQuests {
+			helpText = "ESC ou (q): Fechar missões • claim <id>: Reivindicar"
+		} else {
+			helpText = "ESC: Sair • (f)eed (w)ater (p)et (s)leep (e)xercise (a)nnoy • play • dungeon • ach • quests"
+		}
 	}
 	helpView := styleHelp.Render(helpText)
 

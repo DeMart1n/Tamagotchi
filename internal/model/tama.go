@@ -73,6 +73,12 @@ type Tama struct {
 	MP          int      `json:"mp"`
 	MPMax       int      `json:"mp_max"`
 	SkillsKnown []string `json:"skills_known"`
+
+	// Missões
+	QuestProgress        []QuestProgress `json:"quest_progress,omitempty"`
+	TotalQuestsDone      int             `json:"total_quests_done"`
+	LastDailyReset       time.Time       `json:"last_daily_reset"`
+	TotalEnemiesDefeated int             `json:"total_enemies_defeated"`
 }
 
 // AddXP adiciona XP e faz level up se necessário. Retorna true se houve level up.

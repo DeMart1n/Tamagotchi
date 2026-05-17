@@ -38,7 +38,7 @@ func TestCombat_VolcanicAppliesDot(t *testing.T) {
 	enemy := &Enemy{Name: "Dummy", HPMax: 100, HPCurrent: 100, Ataque: 1, Defesa: 0, Velocidade: 1}
 	combat := NewCombat(player, enemy, BiomeVolcanic)
 
-	combat.ExecuteAction(ActionDefender, nil, 0)
+	combat.ExecuteAction(ActionDefender, nil, nil, 0)
 
 	if combat.Player.HPCurrent >= 95 {
 		t.Fatalf("expected volcanic DOT to reduce player HP significantly, got %d", combat.Player.HPCurrent)

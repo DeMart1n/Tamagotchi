@@ -29,6 +29,7 @@ func DefaultAchievements() []Achievement {
 		{ID: "first_dungeon", Name: "Aventureiro", Description: "Completou uma dungeon run", Icon: "[D]"},
 		{ID: "dragon_slayer", Name: "Mata-Dragao", Description: "Derrotou o Dragao Anciao", Icon: "[X]"},
 		{ID: "dungeon_master", Name: "Mestre da Masmorra", Description: "Completou 5 dungeon runs", Icon: "[#]"},
+		{ID: "quest_master", Name: "Mestre das Missoes", Description: "Completou 10 missoes", Icon: "[Q]"},
 	}
 }
 
@@ -55,6 +56,7 @@ func CheckAchievements(tama *Tama) []string {
 		"first_dungeon":  tama.TotalDungeonRuns >= 1,
 		"dragon_slayer":  tama.TotalBossesDefeated >= 1,
 		"dungeon_master": tama.TotalDungeonRuns >= 5,
+		"quest_master":   tama.TotalQuestsDone >= 10,
 	}
 
 	for i := range tama.Achievements {
