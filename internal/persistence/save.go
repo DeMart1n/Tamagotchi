@@ -13,7 +13,7 @@ const MaxOfflineTicks = 50
 
 // CurrentSchemaVersion é incrementado toda vez que o formato do save mudar.
 // Permite migrações automáticas de saves antigos.
-const CurrentSchemaVersion = 1
+const CurrentSchemaVersion = 2
 
 // SaveData é o envelope raiz do arquivo tamago_save.json.
 // Separa metadados de persistência (versão, timestamp) dos dados do jogo,
@@ -141,9 +141,17 @@ func migrateLegacySave(raw []byte) (SaveData, error) {
 // applyMigrations aplica transformações de dados de acordo com a versão do schema.
 // Adicione cases aqui conforme o schema evoluir.
 func applyMigrations(fromVersion int, tama *model.Tama) error {
-	// v0 → v1: sem transformação de dados além do wrap do envelope
-	_ = fromVersion
-	_ = tama
+	switch fromVersion {
+	case 0, 1:
+		// v1 → v2: inicializa sistema de missões
+		if len(tama.QuestProgress) == 0 {
+			model.InitDefaultQuests(tama)
+		}
+		if tama.LastDailyReset.IsZero() {
+			tama.LastDailyReset = time.Now()
+		}
+		return nil
+	}
 	return nil
 }
 

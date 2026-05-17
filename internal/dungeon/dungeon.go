@@ -109,7 +109,7 @@ func (d *DungeonRun) HandleInput(input string) bool {
 }
 
 // handleIntro processa a tela de introdução com a arte do bioma
-func (d *DungeonRun) handleIntro(input string) {
+func (d *DungeonRun) handleIntro(_ string) {
 	// Qualquer input avança para o menu principal
 	d.Phase = PhaseMenuPrincipal
 	d.Message = "Bem-vindo a Masmorra!"
@@ -127,7 +127,7 @@ func (d *DungeonRun) handleMenuPrincipal(input string) {
 	}
 }
 
-func (d *DungeonRun) handleInventario(input string) {
+func (d *DungeonRun) handleInventario(_ string) {
 	// Qualquer input volta ao menu principal
 	d.Phase = PhaseMenuPrincipal
 	d.Message = "Bem-vindo a Masmorra!"
@@ -303,7 +303,7 @@ func (d *DungeonRun) updateCombatMessage() {
 	}
 }
 
-func (d *DungeonRun) handleCombatResult(input string) {
+func (d *DungeonRun) handleCombatResult(_ string) {
 	if d.Combat == nil {
 		return
 	}
@@ -316,6 +316,7 @@ func (d *DungeonRun) handleCombatResult(input string) {
 		d.TotalXP += xp
 		d.TotalGold += gold
 		d.Inv.Gold += gold
+		d.Tama.TotalEnemiesDefeated++
 
 		// Chance de drop de equipamento (20%)
 		var lootMsg string
@@ -443,7 +444,7 @@ func (d *DungeonRun) handleTesouro(input string) {
 	}
 }
 
-func (d *DungeonRun) handleFimAndar(input string) {
+func (d *DungeonRun) handleFimAndar(_ string) {
 	// Qualquer input avança para o próximo andar
 	d.FloorNum++
 	d.Floor = GenerateFloor(d.FloorNum, d.Tama.Level, d.CurrentBiome)
@@ -451,10 +452,10 @@ func (d *DungeonRun) handleFimAndar(input string) {
 	d.enterCurrentRoom()
 }
 
-func (d *DungeonRun) handleVitoria(input string) {
+func (d *DungeonRun) handleVitoria(_ string) {
 	d.Phase = PhaseDone
 }
 
-func (d *DungeonRun) handleDerrota(input string) {
+func (d *DungeonRun) handleDerrota(_ string) {
 	d.Phase = PhaseDone
 }

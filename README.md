@@ -64,18 +64,18 @@ Uma visão organizada das tarefas e subtarefas para implementação das novas ma
 
 ### 4) Sistema de missões & quests
 
-- [ ] Definir tipos de missão: story (única), diárias, repeatable
+- [x] Definir tipos de missão: story (única), diárias, repeatable
 
-- [ ] Criar 10 missões iniciais
-	- [ ] 2 × Story
-	- [ ] 3 × Diárias
-	- [ ] 5 × Repeatable
+- [x] Criar 10 missões iniciais
+	- [x] 2 × Story
+	- [x] 3 × Diárias
+	- [x] 5 × Repeatable
 
 - [x] Criar esquema de dados persistente e serializar em `tamago_save.json`
 
-- [ ] Implementar fluxo: gerar → aceitar → completar → reivindicar recompensa + notificações
+- [x] Implementar fluxo: gerar → aceitar → completar → reivindicar recompensa + notificações
 
-- [ ] Integrar missões com dungeons, minigames e conquistas
+- [x] Integrar missões com dungeons, minigames e conquistas
 
 ---
 
@@ -213,9 +213,10 @@ Uma visão organizada das tarefas e subtarefas para implementação das novas ma
 - [x] Implementar migração automática de saves antigos (formato flat → envelope)
 - [x] Escrita atômica via `.tmp` + `os.Rename` para evitar corrupção por crash
 - [x] Expandir `save_test.go` com testes de roundtrip, degradação offline, migração legacy e atomicidade
-- [ ] Escrever testes unitários para biomas, classes, quests e combat hooks
+- [x] Escrever testes unitários para quests (`internal/model/quests_test.go`)
+- [ ] Escrever testes unitários para biomas, classes e combat hooks
 
-- [ ] Criar script de migração para `tamago_save.json` (novos campos)
+- [x] Criar script de migração para `tamago_save.json` (novos campos: schema v1→v2 para sistema de quests)
 
 - [ ] Atualizar `README.md` com comandos, lojas, classes e dungeons
 
