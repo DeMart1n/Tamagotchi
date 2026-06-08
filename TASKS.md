@@ -96,13 +96,13 @@ Uma visão organizada das tarefas e subtarefas para implementação das novas ma
 
 ### 6) Troca livre com NPC (3-por-1)
 
-- [ ] Design da mecânica: NPC em descanso oferece 3 itens gratuitos; jogador escolhe 1
+- [x] Design da mecânica: NPC em descanso oferece 3 itens gratuitos; jogador escolhe 1
 
-- [ ] Implementar fluxo de interação na área de descanso
+- [x] Implementar fluxo de interação na área de descanso
 
-- [ ] Balancear oferta: regras de raridade/nível e frequência de aparição
+- [x] Balancear oferta: regras de raridade/nível e frequência de aparição
 
-- [ ] Testes de UX para validar impacto no gameplay
+- [x] Testes de UX para validar impacto no gameplay
 
 ---
 
