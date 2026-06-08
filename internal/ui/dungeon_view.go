@@ -293,9 +293,16 @@ func (m Model) renderDungeonCombat(l layout, titleStyle lipgloss.Style) string {
 		lines = append(lines, "    [0] Voltar")
 	} else if d.ChoosingSkill {
 		lines = append(lines, "  Habilidades:")
-		for i, skillID := range m.tama.SkillsKnown {
+		activeSkills := model.GetActiveSkills(m.tama.SkillsKnown)
+		for i, skillID := range activeSkills {
 			skill := model.AllSkills[skillID]
-			lines = append(lines, fmt.Sprintf("    [%d] %-15s (%d MP)", i+1, skill.Name, skill.Cost))
+			cdInfo := ""
+			if d.Combat != nil {
+				if cd := d.Combat.SkillCooldowns[skillID]; cd > 0 {
+					cdInfo = fmt.Sprintf(" [CD:%d]", cd)
+				}
+			}
+			lines = append(lines, fmt.Sprintf("    [%d] %-15s (%d MP)%s", i+1, skill.Name, skill.Cost, cdInfo))
 		}
 		lines = append(lines, "    [0] Voltar")
 	} else {

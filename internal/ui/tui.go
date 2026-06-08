@@ -89,6 +89,12 @@ type Model struct {
 
 	// Quests
 	showingQuests bool
+
+	// Seleção de classe
+	classCursor int
+
+	// Painel de habilidades
+	showingSkills bool
 }
 
 func InitialModel(tama *model.Tama) Model {
@@ -104,13 +110,20 @@ func InitialModel(tama *model.Tama) Model {
 		_ = json.Unmarshal(tama.Inventory, inv)
 	}
 
-	return Model{
+	m := Model{
 		tama:       tama,
 		textInput:  ti,
 		message:    "* Ola! Cuide bem do " + tama.Name + "!",
 		frame:      0,
 		dungeonInv: inv,
 	}
+
+	if tama.Class == model.ClassNone {
+		m.gameMode = ModeClassSelect
+		m.message = "Escolha a classe do seu Tamagotchi!"
+	}
+
+	return m
 }
 
 func (m Model) Init() tea.Cmd {
@@ -194,15 +207,53 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
+		// Seleção de classe via teclas de navegação
+		if m.gameMode == ModeClassSelect {
+			switch msg.Type {
+			case tea.KeyUp:
+				if m.classCursor > 0 {
+					m.classCursor--
+				}
+				return m, nil
+			case tea.KeyDown:
+				if m.classCursor < len(model.ClassOrder)-1 {
+					m.classCursor++
+				}
+				return m, nil
+			case tea.KeyEnter:
+				m.applyClassSelection(model.ClassOrder[m.classCursor])
+				return m, nil
+			}
+			// Seleção direta por número 1-4
+			if msg.Type == tea.KeyRunes {
+				switch msg.String() {
+				case "1":
+					m.applyClassSelection(model.ClassOrder[0])
+					return m, nil
+				case "2":
+					m.applyClassSelection(model.ClassOrder[1])
+					return m, nil
+				case "3":
+					m.applyClassSelection(model.ClassOrder[2])
+					return m, nil
+				case "4":
+					m.applyClassSelection(model.ClassOrder[3])
+					return m, nil
+				}
+			}
+			return m, nil
+		}
+
 		if m.tama.Dead {
 			if strings.ToLower(msg.String()) == "r" {
 				name := m.tama.Name
 				m.tama.Reset(name)
-				m.message = "* Vida nova para " + name + "! Cuide bem dele."
+				m.message = "Escolha a classe do seu Tamagotchi!"
 				m.isError = false
-				m.dungeonInv = dungeon.NewInventory() // Limpa inventário da dungeon
-				persistence.Delete()                 // Remove save antigo
-				persistence.Save(m.tama)             // Cria save novo limpo
+				m.gameMode = ModeClassSelect
+				m.classCursor = 0
+				m.dungeonInv = dungeon.NewInventory()
+				persistence.Delete()
 				return m, nil
 			}
 		}
@@ -231,11 +282,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.tama.Dead {
 				name := m.tama.Name
 				m.tama.Reset(name)
-				m.message = "* " + name + " renasceu! Cuide bem dele."
+				m.message = "Escolha a classe do seu Tamagotchi!"
 				m.isError = false
+				m.gameMode = ModeClassSelect
+				m.classCursor = 0
 				m.dungeonInv = dungeon.NewInventory()
 				persistence.Delete()
-				persistence.Save(m.tama)
 				return m, nil
 			}
 
@@ -378,10 +430,19 @@ func (m *Model) handleCommand(cmd string) tea.Cmd {
 		m.message = m.renderAchievementsList()
 	case "quests", "q":
 		m.showingQuests = !m.showingQuests
+		m.showingSkills = false
 		if m.showingQuests {
 			m.message = "[>] Painel de missões aberto. Digite 'claim <id>' para reivindicar."
 		} else {
 			m.message = "[>] Painel de missões fechado."
+		}
+	case "hab", "habilidades":
+		m.showingSkills = !m.showingSkills
+		m.showingQuests = false
+		if m.showingSkills {
+			m.message = "[>] Painel de habilidades aberto."
+		} else {
+			m.message = "[>] Painel de habilidades fechado."
 		}
 	case "play guess", "guess":
 		m.gameMode = ModeGuess
@@ -440,6 +501,16 @@ func (m *Model) handleCommand(cmd string) tea.Cmd {
 	return nil
 }
 
+func (m *Model) applyClassSelection(classID model.ClassID) {
+	cls := model.AllClasses[classID]
+	m.tama.Class = classID
+	m.tama.SkillsKnown = make([]string, len(cls.BaseSkills))
+	copy(m.tama.SkillsKnown, cls.BaseSkills)
+	m.gameMode = ModeNormal
+	m.message = fmt.Sprintf("[CLASSE] %s escolhida! Boa sorte, %s!", cls.Name, m.tama.Name)
+	persistence.Save(m.tama)
+}
+
 func (m *Model) saveDungeonInventory() {
 	if m.dungeonInv != nil {
 		data, err := json.Marshal(m.dungeonInv)
@@ -486,7 +557,9 @@ func (m Model) View() string {
 
 	// 2. Área Principal
 	var mainContent string
-	if m.gameMode == ModeDungeon && m.dungeonGame != nil {
+	if m.gameMode == ModeClassSelect {
+		mainContent = m.renderClassSelect(l)
+	} else if m.gameMode == ModeDungeon && m.dungeonGame != nil {
 		mainContent = m.renderDungeon(l)
 	} else if m.gameMode == ModeGuess && m.guessGame != nil {
 		gameView := lipgloss.NewStyle().
@@ -506,6 +579,8 @@ func (m Model) View() string {
 			Width(l.gameBoxWidth).
 			Render(m.reactGame.RenderView())
 		mainContent = gameView
+	} else if m.showingSkills {
+		mainContent = renderSkillsPanel(m.tama)
 	} else if m.showingQuests {
 		mainContent = renderQuestPanel(m.tama)
 	} else {
@@ -536,6 +611,8 @@ func (m Model) View() string {
 	// 5. Ajuda/Rodapé
 	var helpText string
 	switch m.gameMode {
+	case ModeClassSelect:
+		helpText = "↑↓: Navegar • Enter ou 1-4: Selecionar classe"
 	case ModeGuess:
 		helpText = "ESC: Sair do jogo • Digite um número de 1-100"
 	case ModeReact:
@@ -545,8 +622,10 @@ func (m Model) View() string {
 	default:
 		if m.showingQuests {
 			helpText = "ESC ou (q): Fechar missões • claim <id>: Reivindicar"
+		} else if m.showingSkills {
+			helpText = "(hab): Fechar habilidades"
 		} else {
-			helpText = "ESC: Sair • (f)eed (w)ater (p)et (s)leep (e)xercise (a)nnoy • play • dungeon • ach • quests"
+			helpText = "ESC: Sair • (f)eed (w)ater (p)et (s)leep (e)xercise (a)nnoy • play • dungeon • ach • quests • hab"
 		}
 	}
 	helpView := styleHelp.Render(helpText)
@@ -701,6 +780,77 @@ func (m Model) progressBar(label string, value, max, width int) string {
 
 	// Formatação da linha: Ícone Label [Barra] Valor
 	return fmt.Sprintf("%-10s %s  %3d%%", label, bar, int(pct*100))
+}
+
+func (m Model) renderClassSelect(l layout) string {
+	title := lipgloss.NewStyle().Bold(true).Foreground(special).Render("ESCOLHA SUA CLASSE")
+	subtitle := lipgloss.NewStyle().Foreground(subtle).Render("Use ↑↓ ou digite 1-4 e pressione Enter")
+
+	lines := []string{title, subtitle, ""}
+
+	for i, classID := range model.ClassOrder {
+		cls := model.AllClasses[classID]
+
+		cursor := "  "
+		rowStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#888"))
+		if i == m.classCursor {
+			cursor = "▶ "
+			rowStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#7D56F4")).Bold(true)
+		}
+
+		statSummary := classStatSummary(cls)
+		nameLine := rowStyle.Render(fmt.Sprintf("%s%d. %-12s  %s", cursor, i+1, cls.Name, statSummary))
+		descLine := lipgloss.NewStyle().Foreground(lipgloss.Color("#666")).Italic(true).
+			Render(fmt.Sprintf("     %s", cls.Description))
+
+		lines = append(lines, nameLine, descLine, "")
+	}
+
+	content := lipgloss.JoinVertical(lipgloss.Left, lines...)
+
+	return lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(special).
+		Padding(1, 3).
+		Width(l.gameBoxWidth).
+		Render(content)
+}
+
+func classStatSummary(cls model.Class) string {
+	parts := []string{}
+	if cls.HPMult > 1.1 {
+		parts = append(parts, "HP↑↑")
+	} else if cls.HPMult > 1.0 {
+		parts = append(parts, "HP↑")
+	} else if cls.HPMult < 0.95 {
+		parts = append(parts, "HP↓")
+	}
+	if cls.ATKMult > 1.1 {
+		parts = append(parts, "ATK↑↑")
+	} else if cls.ATKMult < 0.95 {
+		parts = append(parts, "ATK↓")
+	}
+	if cls.DEFMult > 1.1 {
+		parts = append(parts, "DEF↑↑")
+	} else if cls.DEFMult > 1.0 {
+		parts = append(parts, "DEF↑")
+	} else if cls.DEFMult < 0.95 {
+		parts = append(parts, "DEF↓")
+	}
+	if cls.VELMult > 1.1 {
+		parts = append(parts, "VEL↑↑")
+	} else if cls.VELMult < 0.95 {
+		parts = append(parts, "VEL↓")
+	}
+	if cls.LUCKMult > 1.2 {
+		parts = append(parts, "CRIT↑↑")
+	} else if cls.LUCKMult > 1.0 {
+		parts = append(parts, "CRIT↑")
+	}
+	if cls.MPMult > 1.2 {
+		parts = append(parts, "MP↑↑")
+	}
+	return strings.Join(parts, " ")
 }
 
 func (m Model) progressBarXP(label string, value, maxVal, width int) string {

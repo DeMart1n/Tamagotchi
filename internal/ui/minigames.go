@@ -18,6 +18,7 @@ const (
 	ModeGuess
 	ModeReact
 	ModeDungeon
+	ModeClassSelect
 )
 
 // --- Jogo de Adivinhação ---
