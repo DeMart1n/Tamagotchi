@@ -18,6 +18,7 @@ const (
 	PhaseCombatResult
 	PhaseDescanso
 	PhaseDescansoLoja
+	PhaseNPCTrade
 	PhaseTesouro
 	PhaseFimAndar
 	PhaseVitoria
@@ -55,6 +56,10 @@ type DungeonRun struct {
 	ShopStock    []ShopEntry   // estoque atual
 	ShopConfirm  bool          // aguardando confirmação
 	ShopPending  int           // índice do item selecionado para confirmar
+
+	// Estado do comércio NPC gratuito
+	NPCTradeStock []ShopEntry // 3 ofertas gratuitas; nil = nenhum NPC nesta sala
+	NPCTradeUsed  bool        // true após o jogador ter reivindicado uma oferta
 }
 
 // NewDungeonRun cria uma nova sessão de dungeon.
@@ -104,6 +109,8 @@ func (d *DungeonRun) HandleInput(input string) bool {
 		d.handleDescanso(input)
 	case PhaseDescansoLoja:
 		d.handleDescansoLoja(input)
+	case PhaseNPCTrade:
+		d.handleNPCTrade(input)
 	case PhaseTesouro:
 		d.handleTesouro(input)
 	case PhaseFimAndar:
@@ -183,6 +190,12 @@ func (d *DungeonRun) enterCurrentRoom() {
 		}
 		d.Message = fmt.Sprintf("Sala de Descanso! Recuperou %d HP.", heal)
 		d.SubMessage = ""
+		// Spawn NPC comércio gratuito com 70% de chance
+		d.NPCTradeStock = nil
+		d.NPCTradeUsed = false
+		if rand.Intn(100) < 70 {
+			d.NPCTradeStock = generateNPCTradeOffer(d.FloorNum)
+		}
 	case RoomTreasure:
 		d.Phase = PhaseTesouro
 		d.PendingLoot = room.Loot
@@ -395,6 +408,11 @@ func (d *DungeonRun) handleDescanso(input string) {
 			room.Cleared = true
 		}
 		d.advanceAfterRoom()
+	case "3": // Comerciante NPC
+		if len(d.NPCTradeStock) > 0 && !d.NPCTradeUsed {
+			d.Phase = PhaseNPCTrade
+			d.Message = "Comerciante NPC: Escolha 1 item (de graça)!"
+		}
 	}
 }
 
@@ -563,6 +581,38 @@ func (d *DungeonRun) handleTesouro(input string) {
 	}
 }
 
+func (d *DungeonRun) handleNPCTrade(input string) {
+	switch input {
+	case "0", "Escape":
+		d.Phase = PhaseDescanso
+		d.Message = "Sala de Descanso"
+		return
+	case "1", "2", "3":
+		idx := int(input[0] - '1')
+		if idx >= len(d.NPCTradeStock) {
+			return
+		}
+		entry := d.NPCTradeStock[idx]
+		if entry.Stock == 0 {
+			return
+		}
+
+		if entry.Kind == "item" {
+			itemCopy := *entry.Item
+			d.ItemBag.Add(itemCopy)
+			d.Message = fmt.Sprintf("Recebeu %s! O comerciante parte.", entry.Item.Name)
+		} else if entry.Kind == "equipment" {
+			eqCopy := *entry.Equip
+			d.Inv.Backpack = append(d.Inv.Backpack, &eqCopy)
+			d.Message = fmt.Sprintf("Recebeu %s! O comerciante parte.", entry.Equip.Name)
+		}
+
+		d.NPCTradeStock[idx].Stock = 0
+		d.NPCTradeUsed = true
+		d.Phase = PhaseDescanso
+	}
+}
+
 func (d *DungeonRun) handleFimAndar(_ string) {
 	// Qualquer input avança para o próximo andar
 	d.FloorNum++
@@ -643,6 +693,123 @@ func generateShopStock(floorNum int) []ShopEntry {
 	}
 
 	return stock
+}
+
+// generateNPCTradeOffer cria uma oferta gratuita com 3 itens (pelo menos 1 consumível e 1 equipamento)
+func generateNPCTradeOffer(floorNum int) []ShopEntry {
+	minRarity := RarityComum
+	maxRarity := RarityIncomum
+
+	if floorNum >= 3 && floorNum <= 4 {
+		minRarity = RarityIncomum
+		maxRarity = RarityRaro
+	} else if floorNum >= 5 {
+		minRarity = RarityRaro
+		maxRarity = RarityRaro
+	}
+
+	// Coleta consumíveis elegíveis
+	var consumablePool []*Item
+	for _, item := range ShopItems {
+		if item.Category == CategoryConsumivel && item.Rarity >= minRarity && item.Rarity <= maxRarity {
+			consumablePool = append(consumablePool, &item)
+		}
+	}
+
+	// Coleta equipamentos elegíveis
+	var equipPool []*Equipment
+	for _, eq := range AllEquipment {
+		if eq.Rarity >= minRarity && eq.Rarity <= maxRarity {
+			equipPool = append(equipPool, eq)
+		}
+	}
+
+	// Garante pelo menos 1 consumível e 1 equipamento
+	if len(consumablePool) == 0 || len(equipPool) == 0 {
+		return []ShopEntry{}
+	}
+
+	var offers []ShopEntry
+	usedIDs := make(map[string]bool)
+
+	// Pega 1 consumível
+	if len(consumablePool) > 0 {
+		idx := rand.Intn(len(consumablePool))
+		item := consumablePool[idx]
+		itemCopy := *item
+		offers = append(offers, ShopEntry{
+			Kind:  "item",
+			Item:  &itemCopy,
+			Price: 0,
+			Stock: 1,
+		})
+		usedIDs[item.ID] = true
+	}
+
+	// Pega 1 equipamento
+	eqPool := equipPool
+	if floorNum >= 5 && rand.Intn(100) < 30 {
+		// 30% chance de incluir Lendario no andar 5+
+		var lendarioPool []*Equipment
+		for _, eq := range equipPool {
+			if eq.Rarity == RarityLendario {
+				lendarioPool = append(lendarioPool, eq)
+			}
+		}
+		if len(lendarioPool) > 0 {
+			eqPool = lendarioPool
+		}
+	}
+
+	if len(eqPool) > 0 {
+		idx := rand.Intn(len(eqPool))
+		eq := eqPool[idx]
+		eqCopy := *eq
+		offers = append(offers, ShopEntry{
+			Kind:  "equipment",
+			Equip: &eqCopy,
+			Price: 0,
+			Stock: 1,
+		})
+		usedIDs[eq.ID] = true
+	}
+
+	// Pega um 3º item (consumível ou equipamento, sem duplicatas)
+	for attempts := 0; attempts < 10 && len(offers) < 3; attempts++ {
+		if rand.Intn(2) == 0 && len(consumablePool) > 0 {
+			// Tenta consumível
+			idx := rand.Intn(len(consumablePool))
+			item := consumablePool[idx]
+			if !usedIDs[item.ID] {
+				itemCopy := *item
+				offers = append(offers, ShopEntry{
+					Kind:  "item",
+					Item:  &itemCopy,
+					Price: 0,
+					Stock: 1,
+				})
+				usedIDs[item.ID] = true
+				break
+			}
+		} else if len(eqPool) > 0 {
+			// Tenta equipamento
+			idx := rand.Intn(len(eqPool))
+			eq := eqPool[idx]
+			if !usedIDs[eq.ID] {
+				eqCopy := *eq
+				offers = append(offers, ShopEntry{
+					Kind:  "equipment",
+					Equip: &eqCopy,
+					Price: 0,
+					Stock: 1,
+				})
+				usedIDs[eq.ID] = true
+				break
+			}
+		}
+	}
+
+	return offers
 }
 
 // getPriceForSale retorna 50% do preço original

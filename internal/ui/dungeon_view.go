@@ -98,6 +98,8 @@ func (m Model) renderDungeon(l layout) string {
 		content = m.renderDungeonRest(l, titleStyle)
 	case dungeon.PhaseDescansoLoja:
 		content = m.renderDungeonShop(l, titleStyle)
+	case dungeon.PhaseNPCTrade:
+		content = m.renderDungeonNPCTrade(l, titleStyle)
 	case dungeon.PhaseTesouro:
 		content = m.renderDungeonTreasure(l, titleStyle)
 	case dungeon.PhaseFimAndar:
@@ -349,6 +351,9 @@ func (m Model) renderDungeonRest(l layout, titleStyle lipgloss.Style) string {
 	lines = append(lines, "")
 	lines = append(lines, "  [1] Loja de Pocoes")
 	lines = append(lines, "  [2] Continuar")
+	if len(d.NPCTradeStock) > 0 && !d.NPCTradeUsed {
+		lines = append(lines, styleRarityLendario.Render("  [3] Comerciante NPC  (oferta especial!)"))
+	}
 
 	return strings.Join(lines, "\n")
 }
@@ -451,6 +456,62 @@ func (m Model) renderDungeonShop(l layout, titleStyle lipgloss.Style) string {
 
 	lines = append(lines, "")
 	lines = append(lines, "  [←→] Tabs  [↑↓] Navegar  [Enter] Comprar  [V] Modo  [0] Sair")
+
+	return strings.Join(lines, "\n")
+}
+
+func (m Model) renderDungeonNPCTrade(l layout, titleStyle lipgloss.Style) string {
+	d := m.dungeonGame
+
+	var lines []string
+	lines = append(lines, m.renderFloorProgress())
+	lines = append(lines, m.renderRoomProgress())
+	lines = append(lines, "")
+	lines = append(lines, titleStyle.Render("  Comerciante NPC"))
+	shopSprite := ItemSprite("shop")
+	if shopSprite != "" {
+		for _, sl := range strings.Split(shopSprite, "\n") {
+			lines = append(lines, "  "+sl)
+		}
+	}
+	lines = append(lines, styleCombatLog.Render("  'Escolha uma coisa, viajante. De graça!'"))
+	lines = append(lines, "")
+
+	for i, entry := range d.NPCTradeStock {
+		var name, rarity, desc string
+
+		if entry.Kind == "item" {
+			name = entry.Item.Name
+			rarity = entry.Item.Rarity.String()
+			switch entry.Item.Type {
+			case dungeon.ItemPotion:
+				if entry.Item.Category == dungeon.CategoryNPCUnico {
+					desc = "Permanente"
+				} else {
+					desc = fmt.Sprintf("+%d HP", entry.Item.Value)
+				}
+			case dungeon.ItemATKBoost:
+				desc = fmt.Sprintf("+%d ATK", entry.Item.Value)
+			}
+		} else {
+			name = entry.Equip.Name
+			rarity = entry.Equip.Rarity.String()
+			desc = entry.Equip.Description()
+		}
+
+		rarityColored := rarityStyle(dungeon.Rarity(entry.Item.Rarity)).Render(rarity)
+		if entry.Kind == "equipment" {
+			rarityColored = rarityStyle(entry.Equip.Rarity).Render(rarity)
+		}
+
+		line := fmt.Sprintf("  [%d] %-20s %s  %s", i+1, name, rarityColored, desc)
+		lines = append(lines, line)
+	}
+
+	lines = append(lines, "")
+	lines = append(lines, styleCombatLog.Render("  "+d.Message))
+	lines = append(lines, "")
+	lines = append(lines, "  [1-3] Escolher    [0] Voltar")
 
 	return strings.Join(lines, "\n")
 }
