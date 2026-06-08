@@ -57,9 +57,13 @@ func NewDungeonRun(tama *model.Tama, inv *Inventory) *DungeonRun {
 	stats := DeriveCombatStats(tama).ApplyEquipment(inv)
 	biome := RandomBiome()
 
-	// Garantir que o Pet tenha habilidades se for um save antigo
+	// Garante que o Pet tenha habilidades: usa skills de classe ou fallback genérico
 	if len(tama.SkillsKnown) == 0 {
-		tama.SkillsKnown = model.GetInitialSkills(tama.Stage)
+		if cls, ok := model.AllClasses[tama.Class]; ok {
+			tama.SkillsKnown = cls.BaseSkills
+		} else {
+			tama.SkillsKnown = model.GetInitialSkills(tama.Stage)
+		}
 	}
 
 	return &DungeonRun{
@@ -151,12 +155,12 @@ func (d *DungeonRun) enterCurrentRoom() {
 	switch room.Type {
 	case RoomCombat:
 		d.Phase = PhaseCombate
-		d.Combat = NewCombat(&d.Stats, room.Enemy, d.CurrentBiome)
+		d.Combat = NewCombat(&d.Stats, room.Enemy, d.CurrentBiome, d.Tama)
 		d.Message = fmt.Sprintf("Um %s apareceu!", room.Enemy.Name)
 		d.SubMessage = ""
 	case RoomBoss:
 		d.Phase = PhaseCombate
-		d.Combat = NewCombat(&d.Stats, room.Enemy, d.CurrentBiome)
+		d.Combat = NewCombat(&d.Stats, room.Enemy, d.CurrentBiome, d.Tama)
 		d.Message = fmt.Sprintf("BOSS: %s!", room.Enemy.Name)
 		d.SubMessage = ""
 	case RoomRest:
@@ -206,8 +210,8 @@ func (d *DungeonRun) handleCombate(input string) {
 	case "2": // Defender
 		d.Combat.ExecuteAction(ActionDefender, nil, nil, 0)
 	case "3": // Habilidades
-		if len(d.Tama.SkillsKnown) == 0 {
-			d.Message = "Voce nao tem habilidades!"
+		if len(model.GetActiveSkills(d.Tama.SkillsKnown)) == 0 {
+			d.Message = "Voce nao tem habilidades ativas!"
 			return
 		}
 		d.ChoosingSkill = true
@@ -248,7 +252,8 @@ func (d *DungeonRun) handleSkillChoice(input string) {
 		idx = int(input[0] - '1')
 	}
 
-	if idx < 0 || idx >= len(d.Tama.SkillsKnown) {
+	activeSkills := model.GetActiveSkills(d.Tama.SkillsKnown)
+	if idx < 0 || idx >= len(activeSkills) {
 		d.Message = "Habilidade invalida!"
 		return
 	}

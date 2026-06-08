@@ -52,6 +52,32 @@ func DeriveCombatStats(tama *model.Tama) CombatStats {
 		hp += 10
 	}
 
+	// Multiplicadores de classe
+	if cls, ok := model.AllClasses[tama.Class]; ok {
+		hp   = int(float64(hp)   * cls.HPMult)
+		mp   = int(float64(mp)   * cls.MPMult)
+		atk  = int(float64(atk)  * cls.ATKMult)
+		def  = int(float64(def)  * cls.DEFMult)
+		vel  = int(float64(vel)  * cls.VELMult)
+		luck = int(float64(luck) * cls.LUCKMult)
+	}
+
+	// Passivas de stat aplicadas em derivação (resistencia, instinto, reflexos)
+	for _, id := range tama.SkillsKnown {
+		sk, ok := model.AllSkills[id]
+		if !ok || !sk.IsPassive {
+			continue
+		}
+		switch id {
+		case "resistencia":
+			def = int(float64(def) * 1.15)
+		case "instinto":
+			luck += 15
+		case "reflexos":
+			luck += 20
+		}
+	}
+
 	return CombatStats{
 		HPMax:      hp,
 		HPCurrent:  hp,

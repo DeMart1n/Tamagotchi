@@ -21,46 +21,66 @@ const (
 type CombatState int
 
 const (
-	CombatChoosing CombatState = iota // Esperando ação do jogador
-	CombatResolved                    // Turno resolvido, mostrar resultado
+	CombatChoosing CombatState = iota
+	CombatResolved
 )
+
+// ActiveBuff rastreia um buff temporário ativo durante o combate.
+type ActiveBuff struct {
+	Stat   string // "atk" | "def" | "vel" | "dodge"
+	Amount int    // valor absoluto adicionado ao stat (usado para reverter)
+	Turns  int    // turnos restantes
+}
 
 // Combat motor de combate por turnos.
 type Combat struct {
-	Player        *CombatStats // Stats com modificadores de bioma
-	OriginalStats *CombatStats // Referência aos stats originais para sincronizar HP
+	Player        *CombatStats
+	OriginalStats *CombatStats
 	Enemy         *Enemy
 	Biome         Biome
 	Modifier      BiomeModifier
 	State         CombatState
-	Log       []string
-	Turn      int
-	Defending bool // Jogador está defendendo neste turno
-	ATKBuff   int  // Buff temporário de ATK (de elixir)
-	FrozenFor int  // Quantidade de turnos congelado
-	Fled      bool // Jogador fugiu com sucesso
-	Won       bool
-	Lost      bool
+	Log           []string
+	Turn          int
+	Defending     bool
+	FrozenFor     int
+	Fled          bool
+	Won           bool
+	Lost          bool
+
+	ActiveBuffs    []ActiveBuff
+	SkillCooldowns map[string]int
+	DodgeChance    int // % de chance de esquivar o próximo ataque inimigo
+	PassiveMPRegen int // MP recuperado por turno (passiva fluxo_arcano)
 }
 
 // NewCombat cria um novo combate.
-func NewCombat(player *CombatStats, enemy *Enemy, biome Biome) *Combat {
+func NewCombat(player *CombatStats, enemy *Enemy, biome Biome, tama *model.Tama) *Combat {
 	modifier := ModifierForBiome(biome)
-
-	// Criamos uma cópia dos stats e aplicamos os modificadores de bioma
-	// Isso garante que ATK/DEF/VEL/LUCK do bioma funcionem no combate
 	statsWithMod := player.ApplyBiomeModifiers(modifier)
 
-	return &Combat{
-		Player:        &statsWithMod,
-		OriginalStats: player, // Guardamos o original para devolver o HP/MP depois
-		Enemy:         enemy,
-		Biome:         biome,
-		Modifier:      modifier,
-		State:         CombatChoosing,
-		Log:           []string{},
-		Turn:          1,
+	c := &Combat{
+		Player:         &statsWithMod,
+		OriginalStats:  player,
+		Enemy:          enemy,
+		Biome:          biome,
+		Modifier:       modifier,
+		State:          CombatChoosing,
+		Log:            []string{},
+		Turn:           1,
+		SkillCooldowns: make(map[string]int),
 	}
+
+	if tama != nil {
+		for _, id := range tama.SkillsKnown {
+			if id == "fluxo_arcano" {
+				c.PassiveMPRegen = 3
+				break
+			}
+		}
+	}
+
+	return c
 }
 
 // IsOver retorna se o combate terminou.
@@ -72,9 +92,10 @@ func (c *Combat) IsOver() bool {
 func (c *Combat) ExecuteAction(action CombatAction, itemBag *ItemBag, tama *model.Tama, actionIndex int) {
 	c.Log = []string{}
 	c.Defending = false
+
+	c.tickActiveBuffs()
 	c.applyBiomeTurnEffects()
 
-	// Se morreu pelo bioma, encerra antes da ação
 	if c.Player.HPCurrent <= 0 {
 		c.Player.HPCurrent = 0
 		c.Lost = true
@@ -108,7 +129,6 @@ func (c *Combat) ExecuteAction(action CombatAction, itemBag *ItemBag, tama *mode
 		}
 	}
 
-	// Verifica morte do inimigo antes dele atacar
 	if c.Enemy.HPCurrent <= 0 {
 		c.Enemy.HPCurrent = 0
 		c.Won = true
@@ -118,10 +138,8 @@ func (c *Combat) ExecuteAction(action CombatAction, itemBag *ItemBag, tama *mode
 		return
 	}
 
-	// Turno do inimigo (sempre acontece se ele estiver vivo)
 	c.enemyTurn()
 
-	// Verifica morte do jogador após ataque do inimigo
 	if c.Player.HPCurrent <= 0 {
 		c.Player.HPCurrent = 0
 		c.Lost = true
@@ -131,12 +149,6 @@ func (c *Combat) ExecuteAction(action CombatAction, itemBag *ItemBag, tama *mode
 	c.syncStats()
 	c.Turn++
 	c.State = CombatResolved
-
-	// Limpa buff de ATK temporário
-	if c.ATKBuff > 0 {
-		c.Player.Ataque -= c.ATKBuff
-		c.ATKBuff = 0
-	}
 }
 
 func (c *Combat) syncStats() {
@@ -146,20 +158,51 @@ func (c *Combat) syncStats() {
 	}
 }
 
+// tickActiveBuffs decrementa duração dos buffs ativos e reverte os expirados.
+// Também decrementa cooldowns de habilidades. Chamado no início de cada turno.
+func (c *Combat) tickActiveBuffs() {
+	remaining := c.ActiveBuffs[:0]
+	for _, b := range c.ActiveBuffs {
+		b.Turns--
+		if b.Turns <= 0 {
+			switch b.Stat {
+			case "atk":
+				c.Player.Ataque -= b.Amount
+			case "def":
+				c.Player.Defesa -= b.Amount
+			case "vel":
+				c.Player.Velocidade -= b.Amount
+			case "dodge":
+				c.DodgeChance -= b.Amount
+				if c.DodgeChance < 0 {
+					c.DodgeChance = 0
+				}
+			}
+		} else {
+			remaining = append(remaining, b)
+		}
+	}
+	c.ActiveBuffs = remaining
+
+	for id, cd := range c.SkillCooldowns {
+		if cd > 0 {
+			c.SkillCooldowns[id] = cd - 1
+		}
+	}
+}
+
 func (c *Combat) playerAttack() {
 	baseDmg := c.Player.Ataque - c.Enemy.Defesa/2
 	if baseDmg < 1 {
 		baseDmg = 1
 	}
 
-	// Variância ±20%
 	variance := float64(baseDmg) * 0.2
 	dmg := baseDmg + int(float64(rand.Intn(int(variance*2+1)))-variance)
 	if dmg < 1 {
 		dmg = 1
 	}
 
-	// Chance de crítico baseada na Sorte
 	critical := false
 	if rand.Intn(100) < c.Player.Sorte {
 		dmg = int(float64(dmg) * 1.5)
@@ -175,13 +218,16 @@ func (c *Combat) playerAttack() {
 }
 
 func (c *Combat) enemyTurn() {
-	// IA: 30% chance de defender quando HP < 25%
-	enemyDefending := false
 	hpPct := float64(c.Enemy.HPCurrent) / float64(c.Enemy.HPMax)
 	if hpPct < 0.25 && rand.Intn(100) < 30 {
-		enemyDefending = true
 		c.Enemy.Defending = true
 		c.Log = append(c.Log, fmt.Sprintf("%s se preparou para defender!", c.Enemy.Name))
+		return
+	}
+
+	// Rola esquiva antes de calcular dano
+	if c.DodgeChance > 0 && rand.Intn(100) < c.DodgeChance {
+		c.Log = append(c.Log, "Voce esquivou do ataque!")
 		return
 	}
 
@@ -194,14 +240,12 @@ func (c *Combat) enemyTurn() {
 		baseDmg += (baseDmg * c.Modifier.EnemyAttackBonusPct) / 100
 	}
 
-	// Variância ±20%
 	variance := float64(baseDmg) * 0.2
 	dmg := baseDmg + int(float64(rand.Intn(int(variance*2+1)))-variance)
 	if dmg < 1 {
 		dmg = 1
 	}
 
-	// Redução se jogador está defendendo
 	if c.Defending {
 		dmg = dmg / 2
 		if dmg < 1 {
@@ -212,9 +256,6 @@ func (c *Combat) enemyTurn() {
 	if c.Enemy.IsFire && c.Modifier.PlayerFireVulnerability > 0 {
 		dmg += (dmg * c.Modifier.PlayerFireVulnerability) / 100
 	}
-
-	// TESTE!!! - Forçando dano alto para validar morte e reset
-	dmg = 100
 
 	critChance := 5 + c.Modifier.EnemyLuckBonusPct
 	if rand.Intn(100) < critChance {
@@ -229,12 +270,9 @@ func (c *Combat) enemyTurn() {
 		c.FrozenFor = 1
 		c.Log = append(c.Log, "Voce foi congelado!")
 	}
-
-	_ = enemyDefending // previne warning
 }
 
 func (c *Combat) applyBiomeTurnEffects() {
-	// Efeito de Dano contínuo (fogo/calor)
 	if c.Modifier.PlayerFireDotPctMaxHP > 0 {
 		dot := (c.Player.HPMax * c.Modifier.PlayerFireDotPctMaxHP) / 100
 		if dot < 1 {
@@ -244,7 +282,6 @@ func (c *Combat) applyBiomeTurnEffects() {
 		c.Log = append(c.Log, fmt.Sprintf("O calor do bioma causa %d de dano continuo!", dot))
 	}
 
-	// Novo: Regen ou Degen flat do bioma
 	if c.Modifier.PlayerHPRegenBonus != 0 {
 		c.Player.HPCurrent += c.Modifier.PlayerHPRegenBonus
 		if c.Modifier.PlayerHPRegenBonus > 0 {
@@ -254,7 +291,14 @@ func (c *Combat) applyBiomeTurnEffects() {
 		}
 	}
 
-	// Garante que HP não exceda Max e não fique negativo aqui (ExecuteAction trata morte)
+	// Passiva de MP regen (fluxo_arcano)
+	if c.PassiveMPRegen > 0 {
+		c.Player.MPCurrent += c.PassiveMPRegen
+		if c.Player.MPCurrent > c.Player.MPMax {
+			c.Player.MPCurrent = c.Player.MPMax
+		}
+	}
+
 	if c.Player.HPCurrent > c.Player.HPMax {
 		c.Player.HPCurrent = c.Player.HPMax
 	}
@@ -276,9 +320,10 @@ func (c *Combat) useItem(bag *ItemBag, index int) {
 		}
 		c.Log = append(c.Log, fmt.Sprintf("Usou %s! Recuperou %d HP!", item.Name, heal))
 	case ItemATKBoost:
-		c.ATKBuff = item.Value
-		c.Player.Ataque += item.Value
-		c.Log = append(c.Log, fmt.Sprintf("Usou %s! ATK +%d neste turno!", item.Name, item.Value))
+		amount := item.Value
+		c.Player.Ataque += amount
+		c.ActiveBuffs = append(c.ActiveBuffs, ActiveBuff{Stat: "atk", Amount: amount, Turns: 1})
+		c.Log = append(c.Log, fmt.Sprintf("Usou %s! ATK +%d neste turno!", item.Name, amount))
 	}
 	bag.Remove(index)
 }
@@ -298,7 +343,6 @@ func (c *Combat) tryFlee() {
 		}
 	}
 
-	// 40% base + 2% por vantagem de velocidade
 	chance := 40 + (playerSpeed-c.Enemy.Velocidade)*2
 	if chance < 10 {
 		chance = 10
@@ -316,15 +360,26 @@ func (c *Combat) tryFlee() {
 }
 
 func (c *Combat) executeSkill(tama *model.Tama, skillIndex int) {
-	if tama == nil || skillIndex < 0 || skillIndex >= len(tama.SkillsKnown) {
+	if tama == nil {
 		c.Log = append(c.Log, "Habilidade invalida!")
 		return
 	}
 
-	skillID := tama.SkillsKnown[skillIndex]
+	activeSkills := model.GetActiveSkills(tama.SkillsKnown)
+	if skillIndex < 0 || skillIndex >= len(activeSkills) {
+		c.Log = append(c.Log, "Habilidade invalida!")
+		return
+	}
+
+	skillID := activeSkills[skillIndex]
 	skill, ok := model.AllSkills[skillID]
 	if !ok {
 		c.Log = append(c.Log, "Habilidade desconhecida!")
+		return
+	}
+
+	if cd := c.SkillCooldowns[skillID]; cd > 0 {
+		c.Log = append(c.Log, fmt.Sprintf("%s em recarga! (%d turno(s))", skill.Name, cd))
 		return
 	}
 
@@ -335,6 +390,10 @@ func (c *Combat) executeSkill(tama *model.Tama, skillIndex int) {
 
 	c.Player.MPCurrent -= skill.Cost
 	c.Log = append(c.Log, fmt.Sprintf("Usou %s!", skill.Name))
+
+	if skill.Cooldown > 0 {
+		c.SkillCooldowns[skillID] = skill.Cooldown
+	}
 
 	switch skill.Type {
 	case model.SkillDamage:
@@ -355,10 +414,27 @@ func (c *Combat) executeSkill(tama *model.Tama, skillIndex int) {
 		c.Log = append(c.Log, fmt.Sprintf("Recuperou %d de HP!", heal))
 
 	case model.SkillBuff:
-		buff := (c.Player.Ataque * skill.Power) / 100
-		c.Player.Ataque += buff
-		c.ATKBuff += buff
-		c.Log = append(c.Log, "Ataque aumentado temporariamente!")
+		var amount int
+		switch skill.BuffStat {
+		case "atk":
+			amount = (c.Player.Ataque * skill.Power) / 100
+			c.Player.Ataque += amount
+		case "def":
+			amount = (c.Player.Defesa * skill.Power) / 100
+			c.Player.Defesa += amount
+		case "vel":
+			amount = (c.Player.Velocidade * skill.Power) / 100
+			c.Player.Velocidade += amount
+		case "dodge":
+			amount = skill.Power
+			c.DodgeChance += amount
+		}
+		turns := skill.BuffTurns
+		if turns < 1 {
+			turns = 1
+		}
+		c.ActiveBuffs = append(c.ActiveBuffs, ActiveBuff{Stat: skill.BuffStat, Amount: amount, Turns: turns})
+		c.Log = append(c.Log, fmt.Sprintf("Buff ativo por %d turno(s)!", turns))
 
 	case model.SkillDebuff:
 		debuff := (c.Enemy.Defesa * skill.Power) / 100

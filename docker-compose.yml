@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   tamago:
     build:
@@ -8,9 +6,5 @@ services:
     image: tamago:latest
     tty: true
     stdin_open: true
-    environment:
-      - TAMAGO_CHILD=1
     working_dir: /app
-    volumes:
-      - ./DUNGEON.md:/app/DUNGEON.md:ro
     restart: unless-stopped

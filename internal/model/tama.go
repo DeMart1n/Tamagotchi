@@ -69,7 +69,8 @@ type Tama struct {
 	TotalBossesDefeated int             `json:"total_bosses_defeated"`
 	CurrentBiome        string          `json:"current_biome"`
 
-	// Habilidades
+	// Classe e Habilidades
+	Class       ClassID  `json:"class,omitempty"`
 	MP          int      `json:"mp"`
 	MPMax       int      `json:"mp_max"`
 	SkillsKnown []string `json:"skills_known"`
@@ -129,6 +130,7 @@ func (t *Tama) Reset(name string) {
 	t.TotalBossesDefeated = 0
 	t.CurrentBiome = ""
 
+	t.Class = ClassNone
 	t.MP = 20
 	t.MPMax = 20
 	t.SkillsKnown = []string{}
