@@ -162,6 +162,12 @@ var AllEquipment = []*Equipment{
 	{ID: "amuleto_vigor", Name: "Amuleto de Vigor", Slot: SlotAcessorio, Rarity: RarityIncomum, Price: 80, BonusHP: 15, BonusDEF: 3},
 	{ID: "bracelete_furia", Name: "Bracelete da Furia", Slot: SlotAcessorio, Rarity: RarityRaro, Price: 200, BonusATK: 10, BonusVEL: 5},
 	{ID: "coroa_rei", Name: "Coroa do Rei", Slot: SlotAcessorio, Rarity: RarityLendario, Price: 600, BonusATK: 8, BonusDEF: 8, BonusHP: 20, BonusLuck: 10},
+
+	// Drops exclusivos de chefes
+	{ID: "espada_raiz_ancia", Name: "Espada da Raiz Ancia", Slot: SlotArma, Rarity: RarityLendario, Price: 800, BonusATK: 22, BonusHP: 15, BonusLuck: 8},
+	{ID: "manto_lich", Name: "Manto do Lich", Slot: SlotArmadura, Rarity: RarityLendario, Price: 850, BonusDEF: 20, BonusHP: 30, BonusVEL: 4},
+	{ID: "brasa_do_lorde", Name: "Brasa do Lorde", Slot: SlotAcessorio, Rarity: RarityLendario, Price: 820, BonusATK: 14, BonusDEF: 6, BonusVEL: 6, BonusLuck: 8},
+	{ID: "lamina_abissal", Name: "Lamina Abissal", Slot: SlotArma, Rarity: RarityLendario, Price: 900, BonusATK: 28, BonusVEL: 3, BonusLuck: 12},
 }
 
 // EquipmentByID busca um equipamento pelo ID.

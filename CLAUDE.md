@@ -248,3 +248,24 @@ Implementado:
 7. ✅ 12 equipamentos com preços (Comum 30–50g, Incomum 80–120g, Raro 200–300g, Lendário 600–800g)
 8. ✅ Navegação: cursor ↑↓/kj, tabs ←→/hl, modo buy/sell (v), confirmação (s/n)
 9. ✅ TUI nova: abas, modo visual, items com raridade e descrição, confirmação inline
+
+**✅ Mais chefes, encontros & loot — CONCLUÍDO**
+
+Implementado:
+1. ✅ 6 encontros temáticos por bioma (`BiomeEnemyPools` com ranges de floor):
+   - Florestal: Druida das Raizes (fl. 1-2), Lobo Sombrio (fl. 3-4)
+   - Gélido: Espirito de Gelo (fl. 2-3), Urso Glacial (fl. 3-4)
+   - Vulcânico: Elemental de Magma (fl. 2-3)
+   - Abissal: Sombra Profunda (fl. 3-4)
+2. ✅ `RandomEnemyForFloor` corrigida para usar bioma
+3. ✅ 4 chefes únicos por bioma (Guardiao da Floresta, Lich do Gelo Eterno, Lorde das Chamas, Devorador do Abismo)
+4. ✅ `BossForBiome(biome, playerLevel)` substituindo `BossForFloor5`
+5. ✅ Mecânica de fases: 3 fases + enrage (triggers em 75%, 50%, 25% HP)
+6. ✅ `Combat` com `BossPhase int` e `BossEnraged bool`
+7. ✅ `checkBossPhaseTransition()` e `applyBossPhaseEffects()` em `combat.go`
+8. ✅ Efeitos únicos por chefe (buffs permanentes, self-heal, múltiplos debuffs)
+9. ✅ 4 equipamentos lendários exclusivos de chefe em `AllEquipment`
+10. ✅ `bossLootForBiome()` em `floor.go`
+11. ✅ `handleCombatResult` com drop garantido para chefes
+12. ✅ Victory message dinâmica com nome real do chefe
+13. ✅ Testes: `boss_test.go` com validação de pools, bosses e drops (todos passando)

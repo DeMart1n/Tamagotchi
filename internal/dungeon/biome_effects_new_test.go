@@ -54,7 +54,7 @@ func TestCombatRegenDegen(t *testing.T) {
 	enemy := &Enemy{Name: "Dummy", HPMax: 100, HPCurrent: 100, Ataque: 1, Defesa: 0}
 	
 	// Floresta tem regen +2
-	combat := NewCombat(player, enemy, BiomeForest)
+	combat := NewCombat(player, enemy, BiomeForest, nil)
 	// NewCombat aplica modificadores, então HPMax vira 110, HPCurrent vira 60 (50 + 10 bônus)
 	// Mas eu quero testar o regen por turno
 	initialHP := combat.Player.HPCurrent
@@ -65,7 +65,7 @@ func TestCombatRegenDegen(t *testing.T) {
 
 	// Vulcânico tem degen -1 (além do DOT de fogo se houver)
 	player2 := &CombatStats{HPMax: 100, HPCurrent: 100, Ataque: 10, Defesa: 10}
-	combatVolc := NewCombat(player2, enemy, BiomeVolcanic)
+	combatVolc := NewCombat(player2, enemy, BiomeVolcanic, nil)
 	initialHP2 := combatVolc.Player.HPCurrent
 	combatVolc.applyBiomeTurnEffects()
 	// VolcMod: PlayerFireDotPctMaxHP: 5 -> 5 damage

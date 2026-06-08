@@ -101,18 +101,102 @@ var FloorEnemyPools = map[int][]EnemyTemplate{
 	},
 }
 
-// RandomEnemyForFloor sorteia um inimigo do pool de um andar, escalado pelo level.
+// Templates temáticos por bioma
+var (
+	// BiomeForest — floors 1-2
+	druida_raizes = EnemyTemplate{ID: "druida_raizes", Name: "Druida das Raizes", HPMin: 22, HPMax: 28, ATKMin: 6, ATKMax: 9, DEF: 3, VEL: 4, XPDrop: 18, GoldMin: 5, GoldMax: 12}
+
+	// BiomeForest — floors 3-4
+	lobo_sombrio = EnemyTemplate{ID: "lobo_sombrio", Name: "Lobo Sombrio", HPMin: 48, HPMax: 60, ATKMin: 16, ATKMax: 19, DEF: 7, VEL: 9, XPDrop: 50, GoldMin: 18, GoldMax: 30}
+
+	// BiomeIcy — floors 2-3
+	espirito_gelo = EnemyTemplate{ID: "espirito_gelo", Name: "Espirito de Gelo", HPMin: 28, HPMax: 36, ATKMin: 10, ATKMax: 13, DEF: 4, VEL: 5, XPDrop: 30, GoldMin: 8, GoldMax: 16}
+
+	// BiomeIcy — floors 3-4
+	urso_glacial = EnemyTemplate{ID: "urso_glacial", Name: "Urso Glacial", HPMin: 55, HPMax: 68, ATKMin: 15, ATKMax: 18, DEF: 12, VEL: 3, XPDrop: 55, GoldMin: 20, GoldMax: 32}
+
+	// BiomeVolcanic — floors 2-3
+	elemental_magma = EnemyTemplate{ID: "elemental_magma", Name: "Elemental de Magma", HPMin: 38, HPMax: 48, ATKMin: 12, ATKMax: 15, DEF: 6, VEL: 5, XPDrop: 40, GoldMin: 14, GoldMax: 24, IsFire: true}
+
+	// BiomeAbyssal — floors 3-4
+	sombra_profunda = EnemyTemplate{ID: "sombra_profunda", Name: "Sombra Profunda", HPMin: 52, HPMax: 65, ATKMin: 18, ATKMax: 22, DEF: 9, VEL: 8, XPDrop: 60, GoldMin: 22, GoldMax: 38}
+
+	// Bosses — um por bioma
+	guardiao_floresta = EnemyTemplate{ID: "guardiao_floresta", Name: "Guardiao da Floresta", HPMin: 220, HPMax: 220, ATKMin: 28, ATKMax: 28, DEF: 16, VEL: 4, XPDrop: 220, GoldMin: 90, GoldMax: 130, IsBoss: true}
+
+	lich_gelo = EnemyTemplate{ID: "lich_gelo", Name: "Lich do Gelo Eterno", HPMin: 200, HPMax: 200, ATKMin: 30, ATKMax: 30, DEF: 12, VEL: 6, XPDrop: 210, GoldMin: 95, GoldMax: 135, IsBoss: true}
+
+	lorde_chamas = EnemyTemplate{ID: "lorde_chamas", Name: "Lorde das Chamas", HPMin: 230, HPMax: 230, ATKMin: 32, ATKMax: 32, DEF: 14, VEL: 7, XPDrop: 230, GoldMin: 100, GoldMax: 145, IsBoss: true, IsFire: true}
+
+	devorador_abismo = EnemyTemplate{ID: "devorador_abismo", Name: "Devorador do Abismo", HPMin: 240, HPMax: 240, ATKMin: 34, ATKMax: 34, DEF: 18, VEL: 9, XPDrop: 240, GoldMin: 110, GoldMax: 160, IsBoss: true}
+)
+
+// BiomeEnemyEntry uma entrada no pool de inimigos temáticos por bioma.
+type BiomeEnemyEntry struct {
+	Template EnemyTemplate
+	FloorMin int
+	FloorMax int
+}
+
+// BiomeEnemyPools mapeia biomas a seus inimigos temáticos.
+var BiomeEnemyPools = map[Biome][]BiomeEnemyEntry{
+	BiomeForest: {
+		{Template: druida_raizes, FloorMin: 1, FloorMax: 2},
+		{Template: lobo_sombrio, FloorMin: 3, FloorMax: 4},
+	},
+	BiomeIcy: {
+		{Template: espirito_gelo, FloorMin: 2, FloorMax: 3},
+		{Template: urso_glacial, FloorMin: 3, FloorMax: 4},
+	},
+	BiomeVolcanic: {
+		{Template: elemental_magma, FloorMin: 2, FloorMax: 3},
+	},
+	BiomeAbyssal: {
+		{Template: sombra_profunda, FloorMin: 3, FloorMax: 4},
+	},
+}
+
+// RandomEnemyForFloor sorteia um inimigo escalado pelo nível, preferindo inimigos temáticos do bioma.
 func RandomEnemyForFloor(floor, playerLevel int, biome Biome) *Enemy {
+	// Tenta encontrar um inimigo temático do bioma
+	if entries, ok := BiomeEnemyPools[biome]; ok {
+		var candidates []EnemyTemplate
+		for _, entry := range entries {
+			if floor >= entry.FloorMin && floor <= entry.FloorMax {
+				candidates = append(candidates, entry.Template)
+			}
+		}
+		if len(candidates) > 0 {
+			return SpawnEnemy(candidates[rand.Intn(len(candidates))], playerLevel)
+		}
+	}
+
+	// Fallback para o pool genérico do andar
 	pool, ok := FloorEnemyPools[floor]
 	if !ok {
 		pool = FloorEnemyPools[1]
 	}
-	_ = biome
 	template := pool[rand.Intn(len(pool))]
 	return SpawnEnemy(template, playerLevel)
 }
 
-// BossForFloor5 retorna o boss do andar 5, escalado pelo level.
+// BossForBiome retorna o boss específico do bioma, escalado pelo level.
+func BossForBiome(biome Biome, playerLevel int) *Enemy {
+	switch biome {
+	case BiomeForest:
+		return SpawnEnemy(guardiao_floresta, playerLevel)
+	case BiomeIcy:
+		return SpawnEnemy(lich_gelo, playerLevel)
+	case BiomeVolcanic:
+		return SpawnEnemy(lorde_chamas, playerLevel)
+	case BiomeAbyssal:
+		return SpawnEnemy(devorador_abismo, playerLevel)
+	default:
+		return SpawnEnemy(guardiao_floresta, playerLevel)
+	}
+}
+
+// BossForFloor5 alias de BossForBiome(BiomeForest) para compatibilidade.
 func BossForFloor5(playerLevel int) *Enemy {
-	return SpawnEnemy(FloorEnemyPools[5][0], playerLevel)
+	return BossForBiome(BiomeForest, playerLevel)
 }

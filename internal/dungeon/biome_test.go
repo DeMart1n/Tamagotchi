@@ -36,7 +36,7 @@ func TestModifierForBiome_HasExpectedPrimaryEffects(t *testing.T) {
 func TestCombat_VolcanicAppliesDot(t *testing.T) {
 	player := &CombatStats{HPMax: 100, HPCurrent: 100, Ataque: 10, Defesa: 10, Velocidade: 10, Sorte: 0}
 	enemy := &Enemy{Name: "Dummy", HPMax: 100, HPCurrent: 100, Ataque: 1, Defesa: 0, Velocidade: 1}
-	combat := NewCombat(player, enemy, BiomeVolcanic)
+	combat := NewCombat(player, enemy, BiomeVolcanic, nil)
 
 	combat.ExecuteAction(ActionDefender, nil, nil, 0)
 
@@ -50,11 +50,11 @@ func TestCombat_ForestFireVulnerabilityIncreasesDamage(t *testing.T) {
 	fireEnemy := Enemy{Name: "Fire Mage", HPMax: 100, HPCurrent: 100, Ataque: 10, Defesa: 0, Velocidade: 5, IsFire: true}
 
 	// Floresta tem PlayerFireVulnerability: 25 e Regen: +2
-	forestCombat := NewCombat(&player, &fireEnemy, BiomeForest)
+	forestCombat := NewCombat(&player, &fireEnemy, BiomeForest, nil)
 	
 	// Abissal NÃO tem vulnerabilidade a fogo e Regen: 0
 	player2 := CombatStats{HPMax: 100, HPCurrent: 100, Ataque: 10, Defesa: 0, Velocidade: 10, Sorte: 0}
-	abyssalCombat := NewCombat(&player2, &fireEnemy, BiomeAbyssal)
+	abyssalCombat := NewCombat(&player2, &fireEnemy, BiomeAbyssal, nil)
 	
 	rand.Seed(7)
 	forestCombat.ExecuteAction(ActionDefender, nil, nil, 0)
