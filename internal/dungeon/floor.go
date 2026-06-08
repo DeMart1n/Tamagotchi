@@ -99,7 +99,7 @@ func generateBossFloor(playerLevel int, biome Biome) []Room {
 		{Type: RoomCombat, Enemy: RandomEnemyForFloor(4, playerLevel, biome)},
 		restRoom,
 		{Type: RoomCombat, Enemy: RandomEnemyForFloor(4, playerLevel, biome)},
-		{Type: RoomBoss, Enemy: BossForFloor5(playerLevel)},
+		{Type: RoomBoss, Enemy: BossForBiome(biome, playerLevel)},
 	}
 	return rooms
 }
@@ -216,6 +216,24 @@ func randomLootForFloor(floor int, biome Biome) *Equipment {
 	picked := candidates[rand.Intn(len(candidates))]
 	copy := *picked
 	return &copy
+}
+
+// bossLootForBiome retorna o drop lendário exclusivo do chefe do bioma.
+func bossLootForBiome(biome Biome) *Equipment {
+	ids := map[Biome]string{
+		BiomeForest:   "espada_raiz_ancia",
+		BiomeIcy:      "manto_lich",
+		BiomeVolcanic: "brasa_do_lorde",
+		BiomeAbyssal:  "lamina_abissal",
+	}
+
+	if id, ok := ids[biome]; ok {
+		if eq := EquipmentByID(id); eq != nil {
+			return eq
+		}
+	}
+
+	return randomLootForFloor(5, biome)
 }
 
 // CurrentRoomRef retorna ponteiro para a sala atual.

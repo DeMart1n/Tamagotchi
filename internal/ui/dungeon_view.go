@@ -586,7 +586,15 @@ func (m Model) renderDungeonVictory(l layout, titleStyle lipgloss.Style) string 
 		}
 	}
 	lines = append(lines, "")
-	lines = append(lines, victoryTitle.Render("  O Dragao Anciao foi derrotado!"))
+
+	bossName := ""
+	if d.Combat != nil && d.Combat.Enemy != nil {
+		bossName = d.Combat.Enemy.Name
+	}
+	if bossName == "" {
+		bossName = "Guardiao"
+	}
+	lines = append(lines, victoryTitle.Render(fmt.Sprintf("  %s foi derrotado!", bossName)))
 	lines = append(lines, "")
 	lines = append(lines, rewardStyle.Render(fmt.Sprintf("  + %d XP", d.TotalXP)))
 	lines = append(lines, rewardStyle.Render(fmt.Sprintf("  + %d Ouro", d.TotalGold)))

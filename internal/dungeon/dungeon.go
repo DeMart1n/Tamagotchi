@@ -341,9 +341,15 @@ func (d *DungeonRun) handleCombatResult(_ string) {
 		d.Inv.Gold += gold
 		d.Tama.TotalEnemiesDefeated++
 
-		// Chance de drop de equipamento (20%)
+		// Drops de equipamento
 		var lootMsg string
-		if rand.Intn(100) < 20 {
+		if d.Combat.Enemy.IsBoss {
+			// Chefes sempre dropam um equipamento lendário exclusivo
+			loot := bossLootForBiome(d.CurrentBiome)
+			d.PendingLoot = loot
+			lootMsg = fmt.Sprintf(" Dropou: %s! [LENDARIO]", loot.Name)
+		} else if rand.Intn(100) < 20 {
+			// Inimigos comuns têm 20% de chance
 			loot := randomLootForFloor(d.FloorNum, d.CurrentBiome)
 			d.PendingLoot = loot
 			lootMsg = fmt.Sprintf(" Dropou: %s!", loot.Name)

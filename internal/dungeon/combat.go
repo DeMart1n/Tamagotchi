@@ -52,6 +52,9 @@ type Combat struct {
 	SkillCooldowns map[string]int
 	DodgeChance    int // % de chance de esquivar o próximo ataque inimigo
 	PassiveMPRegen int // MP recuperado por turno (passiva fluxo_arcano)
+
+	BossPhase   int  // 0-3; apenas significativo quando Enemy.IsBoss == true
+	BossEnraged bool
 }
 
 // NewCombat cria um novo combate.
@@ -128,6 +131,8 @@ func (c *Combat) ExecuteAction(action CombatAction, itemBag *ItemBag, tama *mode
 			}
 		}
 	}
+
+	c.checkBossPhaseTransition()
 
 	if c.Enemy.HPCurrent <= 0 {
 		c.Enemy.HPCurrent = 0
@@ -440,5 +445,120 @@ func (c *Combat) executeSkill(tama *model.Tama, skillIndex int) {
 		debuff := (c.Enemy.Defesa * skill.Power) / 100
 		c.Enemy.Defesa -= debuff
 		c.Log = append(c.Log, fmt.Sprintf("Defesa de %s reduzida!", c.Enemy.Name))
+	}
+}
+
+// checkBossPhaseTransition verifica transições de fase para chefes.
+func (c *Combat) checkBossPhaseTransition() {
+	if !c.Enemy.IsBoss {
+		return
+	}
+
+	hpPct := float64(c.Enemy.HPCurrent) / float64(c.Enemy.HPMax)
+
+	if c.BossPhase == 0 && hpPct <= 0.75 {
+		c.BossPhase = 1
+		c.applyBossPhaseEffects(1)
+		return
+	}
+
+	if c.BossPhase == 1 && hpPct <= 0.50 {
+		c.BossPhase = 2
+		c.applyBossPhaseEffects(2)
+		return
+	}
+
+	if c.BossPhase == 2 && hpPct <= 0.25 && !c.BossEnraged {
+		c.BossPhase = 3
+		c.BossEnraged = true
+		c.applyBossPhaseEffects(3)
+		return
+	}
+}
+
+// applyBossPhaseEffects aplica efeitos específicos de cada fase do chefe.
+func (c *Combat) applyBossPhaseEffects(newPhase int) {
+	switch c.Enemy.Name {
+	case "Guardiao da Floresta":
+		switch newPhase {
+		case 1:
+			amount := c.Player.Velocidade / 5
+			if amount < 1 {
+				amount = 1
+			}
+			c.Player.Velocidade -= amount
+			c.ActiveBuffs = append(c.ActiveBuffs, ActiveBuff{Stat: "vel", Amount: amount, Turns: 999})
+			c.Log = append(c.Log, "FASE 2: O Guardiao cria raizes ao seu redor!")
+
+		case 2:
+			c.Enemy.Ataque += 6
+			c.Log = append(c.Log, "FASE 3: Golpe das Raizes!")
+
+		case 3:
+			c.Enemy.Ataque += 8
+			c.Log = append(c.Log, "ENRAIVECIDO! Furia Ancestral!")
+		}
+
+	case "Lich do Gelo Eterno":
+		switch newPhase {
+		case 1:
+			c.FrozenFor = 1
+			c.Log = append(c.Log, "FASE 2: O Lich lanca aura de gelo!")
+
+		case 2:
+			heal := c.Enemy.HPMax / 8
+			c.Enemy.HPCurrent += heal
+			if c.Enemy.HPCurrent > c.Enemy.HPMax {
+				c.Enemy.HPCurrent = c.Enemy.HPMax
+			}
+			c.Log = append(c.Log, "FASE 3: O Lich se revitaliza!")
+
+		case 3:
+			c.Enemy.Ataque += 10
+			c.FrozenFor = 1
+			c.Log = append(c.Log, "ENRAIVECIDO! Maldicao Eterna!")
+		}
+
+	case "Lorde das Chamas":
+		switch newPhase {
+		case 1:
+			c.Enemy.Ataque += 5
+			c.Log = append(c.Log, "FASE 2: Onda de Calor!")
+
+		case 2:
+			c.Enemy.Ataque += 5
+			c.Log = append(c.Log, "FASE 3: Erupcao de Magma!")
+
+		case 3:
+			c.Enemy.Ataque += 8
+			c.Enemy.Velocidade += 3
+			c.Log = append(c.Log, "ENRAIVECIDO! Inferno Total!")
+		}
+
+	case "Devorador do Abismo":
+		switch newPhase {
+		case 1:
+			amount := c.Player.Ataque / 5
+			if amount < 1 {
+				amount = 1
+			}
+			c.Player.Ataque -= amount
+			c.ActiveBuffs = append(c.ActiveBuffs, ActiveBuff{Stat: "atk", Amount: amount, Turns: 999})
+			c.Log = append(c.Log, "FASE 2: Toque do Abismo drena seu poder!")
+
+		case 2:
+			amount := c.Player.Defesa / 5
+			if amount < 1 {
+				amount = 1
+			}
+			c.Player.Defesa -= amount
+			c.ActiveBuffs = append(c.ActiveBuffs, ActiveBuff{Stat: "def", Amount: amount, Turns: 999})
+			c.Log = append(c.Log, "FASE 3: Pulso do Vazio corroi sua defesa!")
+
+		case 3:
+			c.Enemy.Ataque += 12
+			c.Enemy.Defesa -= c.Enemy.Defesa / 3
+			c.Log = append(c.Log, "ENRAIVECIDO! Colapso do Abismo!")
+		}
 	}
 }
