@@ -222,7 +222,7 @@ O sistema calcula **degradação offline**: ao carregar, computa ticks perdidos 
 
 ---
 
-## Status da Implementação (TASKS.md, Seção 3)
+## Status da Implementação (TASKS.md, Seção 3–5)
 
 **✅ Sistema de Classes e Habilidades — CONCLUÍDO**
 
@@ -235,3 +235,16 @@ Implementado:
 6. ✅ TUI — `ModeClassSelect` no onboarding, painel `habilidades` (comando `hab`)
 7. ✅ `ui/skills_view.go` — painel renderizando ativas e passivas
 8. ✅ Schema v3 — migração automática de saves antigos
+
+**✅ Sistema de Loja Expandido — CONCLUÍDO**
+
+Implementado:
+1. ✅ `ItemCategory` (4 categorias) + `Rarity` em `Item` (`internal/dungeon/items.go`)
+2. ✅ `Equipment.Price` com tabela por raridade (`internal/dungeon/equipment.go`)
+3. ✅ `ShopEntry` tipo unificado (item ou equipment)
+4. ✅ `DungeonRun` novos campos: `ShopTab`, `ShopMode`, `ShopStock`, `ShopConfirm`, `ShopPending`
+5. ✅ `generateShopStock(floorNum)` — geração dinâmica: Comum (andares 1–3), Raro (4–6), Lendário (7+)
+6. ✅ 9 itens consumíveis (Consumível + Qualidade + NPC Único com stock=1)
+7. ✅ 12 equipamentos com preços (Comum 30–50g, Incomum 80–120g, Raro 200–300g, Lendário 600–800g)
+8. ✅ Navegação: cursor ↑↓/kj, tabs ←→/hl, modo buy/sell (v), confirmação (s/n)
+9. ✅ TUI nova: abas, modo visual, items com raridade e descrição, confirmação inline

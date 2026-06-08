@@ -357,34 +357,100 @@ func (m Model) renderDungeonShop(l layout, titleStyle lipgloss.Style) string {
 	d := m.dungeonGame
 
 	var lines []string
-	lines = append(lines, titleStyle.Render("  Loja de Pocoes"))
-	shopSprite := ItemSprite("shop")
-	if shopSprite != "" {
-		for _, sl := range strings.Split(shopSprite, "\n") {
-			lines = append(lines, "  "+sl)
-		}
-	}
-	lines = append(lines, "")
-	lines = append(lines, fmt.Sprintf("  Ouro: %d", d.Inv.Gold))
+	lines = append(lines, titleStyle.Render("  Loja de Aventureiros"))
 	lines = append(lines, "")
 
-	for i, item := range dungeon.ShopItems {
-		desc := ""
-		switch item.Type {
-		case dungeon.ItemPotion:
-			desc = fmt.Sprintf("Cura %d HP", item.Value)
-		case dungeon.ItemATKBoost:
-			desc = fmt.Sprintf("+%d ATK (1 turno)", item.Value)
+	// Tabs
+	tabs := []string{"Consumivel", "Equipamento", "Qualidade", "NPC Unico"}
+	var tabLine string
+	for i, tab := range tabs {
+		if i == d.ShopTab {
+			tabLine += lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FFD700")).Render("["+tab+"] ")
+		} else {
+			tabLine += tab + "  "
 		}
-		lines = append(lines, fmt.Sprintf("  [%d] %s - %d ouro (%s)", i+1, item.Name, item.Price, desc))
+	}
+	lines = append(lines, "  "+tabLine)
+	lines = append(lines, "")
+
+	// Info bar
+	modeStr := d.ShopMode
+	if d.ShopMode == "buy" {
+		modeStr = lipgloss.NewStyle().Foreground(lipgloss.Color("#43BF6D")).Render("Compra")
+	} else {
+		modeStr = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF5F87")).Render("Venda")
+	}
+	lines = append(lines, fmt.Sprintf("  Ouro: %d  |  Modo: %s", d.Inv.Gold, modeStr))
+	lines = append(lines, "")
+
+	// Items da tab atual
+	itemsInTab := d.GetItemsInTab()
+	if len(itemsInTab) == 0 {
+		lines = append(lines, "  Nenhum item nesta categoria.")
+	} else {
+		for i, entry := range itemsInTab {
+			cursor := " "
+			if i == d.ShopCursor {
+				cursor = ">"
+			}
+
+			var name, rarity, price, desc string
+
+			if entry.Kind == "item" {
+				name = entry.Item.Name
+				rarity = entry.Item.Rarity.String()
+				price = fmt.Sprintf("%dg", entry.Price)
+				switch entry.Item.Type {
+				case dungeon.ItemPotion:
+					if entry.Item.Category == dungeon.CategoryNPCUnico {
+						desc = "Permanente"
+					} else {
+						desc = fmt.Sprintf("+%d HP", entry.Item.Value)
+					}
+				case dungeon.ItemATKBoost:
+					desc = fmt.Sprintf("+%d ATK", entry.Item.Value)
+				}
+			} else {
+				name = entry.Equip.Name
+				rarity = entry.Equip.Rarity.String()
+				price = fmt.Sprintf("%dg", entry.Price)
+				desc = entry.Equip.Description()
+			}
+
+			stock := ""
+			if entry.Stock == 0 {
+				stock = " [SOLD]"
+			} else if entry.Stock > 0 {
+				stock = fmt.Sprintf(" [%d]", entry.Stock)
+			}
+
+			rarityColored := rarityStyle(dungeon.Rarity(entry.Item.Rarity)).Render(rarity)
+			if entry.Kind == "equipment" {
+				rarityColored = rarityStyle(entry.Equip.Rarity).Render(rarity)
+			}
+
+			line := fmt.Sprintf("  %s %-20s %s %6s %s%s", cursor, name, rarityColored, price, desc, stock)
+			lines = append(lines, line)
+		}
 	}
 
 	lines = append(lines, "")
-	lines = append(lines, "  [0] Voltar")
-	lines = append(lines, "")
-	if d.Message != "" {
+
+	if d.ShopConfirm && len(itemsInTab) > 0 && d.ShopPending < len(itemsInTab) {
+		entry := itemsInTab[d.ShopPending]
+		var confirmMsg string
+		if entry.Kind == "item" {
+			confirmMsg = fmt.Sprintf("Comprar %s por %dg? (S/N)", entry.Item.Name, entry.Price)
+		} else {
+			confirmMsg = fmt.Sprintf("Comprar %s por %dg? (S/N)", entry.Equip.Name, entry.Price)
+		}
+		lines = append(lines, styleCombatLog.Render("  "+confirmMsg))
+	} else if d.Message != "" {
 		lines = append(lines, styleCombatLog.Render("  "+d.Message))
 	}
+
+	lines = append(lines, "")
+	lines = append(lines, "  [←→] Tabs  [↑↓] Navegar  [Enter] Comprar  [V] Modo  [0] Sair")
 
 	return strings.Join(lines, "\n")
 }
