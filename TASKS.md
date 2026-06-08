@@ -108,15 +108,15 @@ Uma visão organizada das tarefas e subtarefas para implementação das novas ma
 
 ### 7) Mais chefes, encontros & loot
 
-- [ ] Criar 6 novos encontros temáticos
+- [x] Criar 6 novos encontros temáticos
 
-- [ ] Projetar 4 chefes (um por bioma) com mecânicas únicas e fases
+- [x] Projetar 4 chefes (um por bioma) com mecânicas únicas e fases
 
-- [ ] Definir tabela de drops e raridades, integrar com `AllEquipment`
+- [x] Definir tabela de drops e raridades, integrar com `AllEquipment`
 
-- [ ] Implementar mecânicas de chefe (phases, enrage, triggers)
+- [x] Implementar mecânicas de chefe (phases, enrage, triggers)
 
-- [ ] Integrar drops ao `Inventory` e sistema de loot
+- [x] Integrar drops ao `Inventory` e sistema de loot
 
 ---
 
