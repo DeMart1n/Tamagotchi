@@ -82,15 +82,15 @@ Uma visão organizada das tarefas e subtarefas para implementação das novas ma
 
 ### 5) Expandir loja & comércio com NPCs
 
-- [ ] Adicionar categorias de loja: Consumíveis, Equipamento, Itens de qualidade, Itens únicos NPC
+- [x] Adicionar categorias de loja: Consumíveis, Equipamento, Itens de qualidade, Itens únicos NPC
 
-- [ ] Implementar restock dinâmico (rotação diária / por descanso)
+- [x] Implementar restock dinâmico (rotação por andar / acesso ao entrar na loja)
 
-- [ ] Sistema de preços baseado em raridade e oferta/demanda
+- [x] Sistema de preços baseado em raridade e oferta/demanda
 
-- [ ] Interface TUI: compra / venda / confirmação (mostrar impacto em gold/inventário)
+- [x] Interface TUI: compra / venda / confirmação (mostrar impacto em gold/inventário)
 
-- [ ] Balanceamento da economia e testes de fluxo
+- [x] Balanceamento da economia e testes de fluxo
 
 ---
 

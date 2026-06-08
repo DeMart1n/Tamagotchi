@@ -49,7 +49,12 @@ type DungeonRun struct {
 	SkillCursor   int
 
 	// Estado da loja de descanso
-	ShopCursor int
+	ShopCursor   int
+	ShopTab      int           // 0=Consumível 1=Equipamento 2=Qualidade 3=NPC Único
+	ShopMode     string        // "buy" ou "sell"
+	ShopStock    []ShopEntry   // estoque atual
+	ShopConfirm  bool          // aguardando confirmação
+	ShopPending  int           // índice do item selecionado para confirmar
 }
 
 // NewDungeonRun cria uma nova sessão de dungeon.
@@ -379,7 +384,11 @@ func (d *DungeonRun) handleDescanso(input string) {
 	case "1": // Loja
 		d.Phase = PhaseDescansoLoja
 		d.ShopCursor = 0
-		d.Message = fmt.Sprintf("Loja (Ouro: %d)", d.Inv.Gold)
+		d.ShopTab = 0
+		d.ShopMode = "buy"
+		d.ShopConfirm = false
+		d.ShopStock = generateShopStock(d.FloorNum)
+		d.Message = fmt.Sprintf("Loja de Aventureiros (Ouro: %d)", d.Inv.Gold)
 	case "2": // Continuar
 		room := d.Floor.CurrentRoomRef()
 		if room != nil {
@@ -390,31 +399,136 @@ func (d *DungeonRun) handleDescanso(input string) {
 }
 
 func (d *DungeonRun) handleDescansoLoja(input string) {
-	if input == "0" {
+	if d.ShopConfirm {
+		d.handleShopConfirm(input)
+		return
+	}
+
+	switch input {
+	case "0", "Escape":
 		d.Phase = PhaseDescanso
 		d.Message = "Sala de Descanso"
 		return
-	}
-
-	idx := -1
-	if len(input) == 1 && input[0] >= '1' && input[0] <= '9' {
-		idx = int(input[0] - '1')
-	}
-
-	if idx < 0 || idx >= len(ShopItems) {
-		d.Message = "Item invalido!"
+	case "h", "Left":
+		d.ShopTab = (d.ShopTab - 1 + 4) % 4
+		d.ShopCursor = 0
 		return
-	}
-
-	item := ShopItems[idx]
-	if d.Inv.Gold < item.Price {
-		d.Message = fmt.Sprintf("Ouro insuficiente! Precisa de %d, tem %d.", item.Price, d.Inv.Gold)
+	case "l", "Right":
+		d.ShopTab = (d.ShopTab + 1) % 4
+		d.ShopCursor = 0
 		return
+	case "j", "Down":
+		itemsInTab := d.GetItemsInTab()
+		d.ShopCursor = (d.ShopCursor + 1) % len(itemsInTab)
+		return
+	case "k", "Up":
+		itemsInTab := d.GetItemsInTab()
+		d.ShopCursor = (d.ShopCursor - 1 + len(itemsInTab)) % len(itemsInTab)
+		return
+	case "v":
+		if d.ShopMode == "buy" {
+			d.ShopMode = "sell"
+		} else {
+			d.ShopMode = "buy"
+		}
+		d.ShopCursor = 0
+		return
+	case "Return":
+		itemsInTab := d.GetItemsInTab()
+		if len(itemsInTab) == 0 {
+			d.Message = "Nenhum item nesta categoria!"
+			return
+		}
+		if d.ShopCursor < 0 || d.ShopCursor >= len(itemsInTab) {
+			return
+		}
+
+		entry := itemsInTab[d.ShopCursor]
+		if entry.Stock == 0 {
+			d.Message = "Este item acabou!"
+			return
+		}
+
+		if d.ShopMode == "buy" {
+			if d.Inv.Gold < entry.Price {
+				d.Message = fmt.Sprintf("Ouro insuficiente! Precisa de %d, tem %d.", entry.Price, d.Inv.Gold)
+				return
+			}
+			d.ShopPending = d.ShopCursor
+			d.ShopConfirm = true
+			return
+		}
+	}
+}
+
+// GetItemsInTab retorna os itens do tab atual
+func (d *DungeonRun) GetItemsInTab() []ShopEntry {
+	var result []ShopEntry
+
+	switch d.ShopTab {
+	case 0: // Consumível
+		for _, entry := range d.ShopStock {
+			if entry.Kind == "item" && entry.Item.Category == CategoryConsumivel {
+				result = append(result, entry)
+			}
+		}
+	case 1: // Equipamento
+		for _, entry := range d.ShopStock {
+			if entry.Kind == "equipment" {
+				result = append(result, entry)
+			}
+		}
+	case 2: // Qualidade
+		for _, entry := range d.ShopStock {
+			if entry.Kind == "item" && entry.Item.Category == CategoryQualidade {
+				result = append(result, entry)
+			}
+		}
+	case 3: // NPC Único
+		for _, entry := range d.ShopStock {
+			if entry.Kind == "item" && entry.Item.Category == CategoryNPCUnico {
+				result = append(result, entry)
+			}
+		}
 	}
 
-	d.Inv.Gold -= item.Price
-	d.ItemBag.Add(item)
-	d.Message = fmt.Sprintf("Comprou %s! (Ouro: %d)", item.Name, d.Inv.Gold)
+	return result
+}
+
+// handleShopConfirm processa a confirmação de compra/venda
+func (d *DungeonRun) handleShopConfirm(input string) {
+	switch input {
+	case "s", "S":
+		itemsInTab := d.GetItemsInTab()
+		if d.ShopPending < 0 || d.ShopPending >= len(itemsInTab) {
+			d.ShopConfirm = false
+			return
+		}
+
+		entry := itemsInTab[d.ShopPending]
+		if d.ShopMode == "buy" {
+			if entry.Kind == "item" {
+				d.Inv.Gold -= entry.Price
+				d.ItemBag.Add(*entry.Item)
+				d.Message = fmt.Sprintf("Comprou %s!", entry.Item.Name)
+				if entry.Stock > 0 {
+					entry.Stock--
+				}
+			} else if entry.Kind == "equipment" {
+				d.Inv.Gold -= entry.Price
+				copy := *entry.Equip
+				d.Inv.Backpack = append(d.Inv.Backpack, &copy)
+				d.Message = fmt.Sprintf("Comprou %s!", entry.Equip.Name)
+				if entry.Stock > 0 {
+					entry.Stock--
+				}
+			}
+		}
+		d.ShopConfirm = false
+	case "n", "N":
+		d.ShopConfirm = false
+		d.Message = "Compra cancelada."
+	}
 }
 
 func (d *DungeonRun) handleTesouro(input string) {
@@ -455,6 +569,85 @@ func (d *DungeonRun) handleFimAndar(_ string) {
 	d.Floor = GenerateFloor(d.FloorNum, d.Tama.Level, d.CurrentBiome)
 	d.Message = fmt.Sprintf("Entrando no Andar %d...", d.FloorNum)
 	d.enterCurrentRoom()
+}
+
+// generateShopStock cria o estoque de loja baseado no andar
+func generateShopStock(floorNum int) []ShopEntry {
+	maxRarity := RarityComum
+	if floorNum >= 4 {
+		maxRarity = RarityRaro
+	}
+	if floorNum >= 7 {
+		maxRarity = RarityLendario
+	}
+
+	var stock []ShopEntry
+
+	// Consumíveis (sempre disponíveis)
+	for _, item := range ShopItems {
+		if item.Category != CategoryConsumivel {
+			continue
+		}
+		if item.Rarity > maxRarity {
+			continue
+		}
+		itemCopy := item
+		stock = append(stock, ShopEntry{
+			Kind:  "item",
+			Item:  &itemCopy,
+			Price: item.Price,
+			Stock: -1,
+		})
+	}
+
+	// Qualidade (sempre disponível)
+	for _, item := range ShopItems {
+		if item.Category != CategoryQualidade {
+			continue
+		}
+		if item.Rarity > maxRarity {
+			continue
+		}
+		itemCopy := item
+		stock = append(stock, ShopEntry{
+			Kind:  "item",
+			Item:  &itemCopy,
+			Price: item.Price,
+			Stock: -1,
+		})
+	}
+
+	// Equipamentos (filtra por raridade)
+	for _, eq := range AllEquipment {
+		if eq.Rarity <= maxRarity {
+			stock = append(stock, ShopEntry{
+				Kind:  "equipment",
+				Equip: eq,
+				Price: eq.Price,
+				Stock: -1,
+			})
+		}
+	}
+
+	// NPC Único (stock=1, sempre aparecem)
+	for _, item := range ShopItems {
+		if item.Category == CategoryNPCUnico {
+			itemCopy := item
+			stock = append(stock, ShopEntry{
+				Kind:  "item",
+				Item:  &itemCopy,
+				Price: item.Price,
+				Stock: 1,
+			})
+		}
+	}
+
+	return stock
+}
+
+// getPriceForSale retorna 50% do preço original
+func getPriceForSale(price int) int {
+	return price / 2
 }
 
 func (d *DungeonRun) handleVitoria(_ string) {

@@ -71,6 +71,7 @@ type Equipment struct {
 	Name      string    `json:"name"`
 	Slot      EquipSlot `json:"slot"`
 	Rarity    Rarity    `json:"rarity"`
+	Price     int       `json:"price"` // Preço na loja
 	BonusHP   int       `json:"bonus_hp"`
 	BonusATK  int       `json:"bonus_atk"`
 	BonusDEF  int       `json:"bonus_def"`
@@ -145,22 +146,22 @@ func (inv *Inventory) Equip(eq *Equipment) {
 // AllEquipment retorna a tabela completa de equipamentos do jogo.
 var AllEquipment = []*Equipment{
 	// Armas
-	{ID: "espada_ferro", Name: "Espada de Ferro", Slot: SlotArma, Rarity: RarityComum, BonusATK: 5},
-	{ID: "espada_afiada", Name: "Espada Afiada", Slot: SlotArma, Rarity: RarityIncomum, BonusATK: 10, BonusVEL: 2},
-	{ID: "machado_guerra", Name: "Machado de Guerra", Slot: SlotArma, Rarity: RarityRaro, BonusATK: 18, BonusDEF: 3},
-	{ID: "katana_lendaria", Name: "Katana Lendaria", Slot: SlotArma, Rarity: RarityLendario, BonusATK: 25, BonusVEL: 5, BonusLuck: 5},
+	{ID: "espada_ferro", Name: "Espada de Ferro", Slot: SlotArma, Rarity: RarityComum, Price: 40, BonusATK: 5},
+	{ID: "espada_afiada", Name: "Espada Afiada", Slot: SlotArma, Rarity: RarityIncomum, Price: 100, BonusATK: 10, BonusVEL: 2},
+	{ID: "machado_guerra", Name: "Machado de Guerra", Slot: SlotArma, Rarity: RarityRaro, Price: 250, BonusATK: 18, BonusDEF: 3},
+	{ID: "katana_lendaria", Name: "Katana Lendaria", Slot: SlotArma, Rarity: RarityLendario, Price: 700, BonusATK: 25, BonusVEL: 5, BonusLuck: 5},
 
 	// Armaduras
-	{ID: "armadura_couro", Name: "Armadura de Couro", Slot: SlotArmadura, Rarity: RarityComum, BonusDEF: 4, BonusHP: 5},
-	{ID: "armadura_ferro", Name: "Armadura de Ferro", Slot: SlotArmadura, Rarity: RarityIncomum, BonusDEF: 8, BonusHP: 10},
-	{ID: "armadura_mithril", Name: "Armadura de Mithril", Slot: SlotArmadura, Rarity: RarityRaro, BonusDEF: 14, BonusHP: 20, BonusVEL: 2},
-	{ID: "armadura_dragao", Name: "Armadura de Dragao", Slot: SlotArmadura, Rarity: RarityLendario, BonusDEF: 22, BonusHP: 35, BonusVEL: 3},
+	{ID: "armadura_couro", Name: "Armadura de Couro", Slot: SlotArmadura, Rarity: RarityComum, Price: 50, BonusDEF: 4, BonusHP: 5},
+	{ID: "armadura_ferro", Name: "Armadura de Ferro", Slot: SlotArmadura, Rarity: RarityIncomum, Price: 120, BonusDEF: 8, BonusHP: 10},
+	{ID: "armadura_mithril", Name: "Armadura de Mithril", Slot: SlotArmadura, Rarity: RarityRaro, Price: 300, BonusDEF: 14, BonusHP: 20, BonusVEL: 2},
+	{ID: "armadura_dragao", Name: "Armadura de Dragao", Slot: SlotArmadura, Rarity: RarityLendario, Price: 800, BonusDEF: 22, BonusHP: 35, BonusVEL: 3},
 
 	// Acessórios
-	{ID: "anel_sorte", Name: "Anel da Sorte", Slot: SlotAcessorio, Rarity: RarityComum, BonusLuck: 8},
-	{ID: "amuleto_vigor", Name: "Amuleto de Vigor", Slot: SlotAcessorio, Rarity: RarityIncomum, BonusHP: 15, BonusDEF: 3},
-	{ID: "bracelete_furia", Name: "Bracelete da Furia", Slot: SlotAcessorio, Rarity: RarityRaro, BonusATK: 10, BonusVEL: 5},
-	{ID: "coroa_rei", Name: "Coroa do Rei", Slot: SlotAcessorio, Rarity: RarityLendario, BonusATK: 8, BonusDEF: 8, BonusHP: 20, BonusLuck: 10},
+	{ID: "anel_sorte", Name: "Anel da Sorte", Slot: SlotAcessorio, Rarity: RarityComum, Price: 30, BonusLuck: 8},
+	{ID: "amuleto_vigor", Name: "Amuleto de Vigor", Slot: SlotAcessorio, Rarity: RarityIncomum, Price: 80, BonusHP: 15, BonusDEF: 3},
+	{ID: "bracelete_furia", Name: "Bracelete da Furia", Slot: SlotAcessorio, Rarity: RarityRaro, Price: 200, BonusATK: 10, BonusVEL: 5},
+	{ID: "coroa_rei", Name: "Coroa do Rei", Slot: SlotAcessorio, Rarity: RarityLendario, Price: 600, BonusATK: 8, BonusDEF: 8, BonusHP: 20, BonusLuck: 10},
 }
 
 // EquipmentByID busca um equipamento pelo ID.
